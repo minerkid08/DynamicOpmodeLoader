@@ -22,7 +22,7 @@ lua_State* l;
 
 int print(lua_State* l)
 {
-	printf(lua_tostring(l, -1));
+	printf("%s\n", lua_tostring(l, -1));
 	return 0;
 }
 
