@@ -9,6 +9,9 @@ loadOpmode({
 	end,
 	start = function()
 		print("opmode 1 start\n");
+	end,
+	update = function(deltaTime, elapsedTime)
+		print("dt: " .. tostring(deltaTime) .. ", et: " .. tostring(elapsedTime))
 	end
 })
 
@@ -29,3 +32,4 @@ init = function()
 print(data[0].name .. '\n')
 print(data[1].name .. '\n')
 print(data[2].name .. '\n')
+end
