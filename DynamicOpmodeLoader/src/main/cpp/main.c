@@ -1,3 +1,4 @@
+#include "functionBuilder.h"
 #include "lua/lauxlib.h"
 #include "lua/lualib.h"
 #include "lua/lua.h"
@@ -50,6 +51,7 @@ int addOpmode(lua_State* l)
 
 JNIEXPORT jobjectArray JNICALL init(JNIEnv* env, jobject this, jobject stdlib)
 {
+  global.env = env;
 	global.opmodes = dynList_new(sizeof(Opmode), 5);
 	dynList_resize((void*)&global.opmodes, 0);
 
@@ -62,6 +64,8 @@ JNIEXPORT jobjectArray JNICALL init(JNIEnv* env, jobject this, jobject stdlib)
 	lua_setglobal(global.l, "data");
 
   luaL_openlibs(global.l);
+
+  initFunctionBuilder();
 
 	if (luaL_dofile(global.l, "lua/init.lua"))
 	{
@@ -87,6 +91,7 @@ JNIEXPORT jobjectArray JNICALL init(JNIEnv* env, jobject this, jobject stdlib)
 
 JNIEXPORT void JNICALL loadOpmode(JNIEnv* env, jobject this, jstring opmodeName)
 {
+  global.env = env;
 	global.currentOpmode = -1;
 	const char* name = (*env)->GetStringUTFChars(env, opmodeName, NULL);
 	int opmodeCount = dynList_size(global.opmodes);
@@ -123,6 +128,7 @@ JNIEXPORT void JNICALL loadOpmode(JNIEnv* env, jobject this, jstring opmodeName)
 
 JNIEXPORT void JNICALL start(JNIEnv* env, jobject this, int recognitionId)
 {
+  global.env = env;
 	lua_getfield(global.l, -1, "start");
 	if (lua_type(global.l, -1) == LUA_TFUNCTION)
 	{
@@ -137,6 +143,7 @@ JNIEXPORT void JNICALL start(JNIEnv* env, jobject this, int recognitionId)
 
 JNIEXPORT void JNICALL update(JNIEnv* env, jobject this, double deltaTime, double elapsedTime)
 {
+  global.env = env;
 	lua_getfield(global.l, -1, "update");
 	if (lua_type(global.l, -1) == LUA_TFUNCTION)
 	{

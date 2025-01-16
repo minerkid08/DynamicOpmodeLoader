@@ -1,11 +1,23 @@
 package com.minerkid08.dynamicopmodeloader
 
+class TestObj
+{
+	fun dothing()
+	{
+		println("did thing");
+	}
+}
+
 fun main()
 {
-	System.loadLibrary("dynamicopmodeloader")
-	
 	val opmodeLoader = OpmodeLoader();
 	val opmodes = opmodeLoader.init() ?: return;
+	
+	val builder = opmodeLoader.getFunctionBuilder();
+	val obj = TestObj();
+	
+	builder.setCurrentObject(obj);
+	builder.addFun("dothing");
 	
 	for(opmode in opmodes)
 	{

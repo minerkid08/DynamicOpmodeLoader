@@ -10,7 +10,7 @@ class FunctionBuilder
 	/**
 	 * sets the object to pull functions from to expose to lua
 	 */
-	//external fun <T> setCurrentObject(thing: T);
+	external fun <T> setCurrentObject(thing: T);
 	
 	/**
 	 * starts a new lua table for functions
@@ -46,10 +46,10 @@ class FunctionBuilder
 		}
 		funSignature += ')';
 		funSignature += typeToStr(rtnType);
-		//addFunction(name, funSignature, rtnType.id, argc);
+		addFunction(name, funSignature, rtnType.id, argc);
 	}
 	
-	//private external fun addFunction(name: String, funSignature: String, rtnType: Int, argc: Int);
+	private external fun addFunction(name: String, funSignature: String, rtnType: Int, argc: Int);
 	
 	private fun typeToStr(type: LuaType): String
 	{

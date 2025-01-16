@@ -9,6 +9,7 @@ void function_init(Function* this, const char* name, const char* sig, char rtnTy
 {
 	jclass class = (*global.env)->GetObjectClass(global.env, global.currentObject);
 	this->funId = (*global.env)->GetMethodID(global.env, class, name, sig);
+  this->obj = global.currentObject;
 	this->argc = argc;
 	this->rtnType = rtnType;
 	this->argTypes = malloc(argc);
