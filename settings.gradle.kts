@@ -21,3 +21,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "DynamicOpmodeLoader"
 include(":DynamicOpmodeLoader")
+include(":project")

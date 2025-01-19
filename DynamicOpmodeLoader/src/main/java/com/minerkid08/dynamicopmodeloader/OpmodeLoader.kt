@@ -6,7 +6,7 @@ class OpmodeLoader()
 	{
 		init
 		{
-			System.loadLibrary("dynamicOpmodeLoader");
+			System.loadLibrary("dynamicopmodeloader");
 		}
 	}
 	
@@ -30,9 +30,9 @@ class OpmodeLoader()
 		
 		//builder.setCurrentObject(stdlib);
 		
-		builder.addFun("print", LuaType.Void, listOf(LuaType.String));
-		builder.addFun("err", LuaType.Void, listOf(LuaType.String));
-		builder.addFun("stop", LuaType.CheckRun);
+		//builder.addFun("print", LuaType.Void, listOf(LuaType.String));
+		//builder.addFun("err", LuaType.Void, listOf(LuaType.String));
+		//builder.addFun("stop", LuaType.CheckRun);
 		
 		return opmodes;
 	}
@@ -50,7 +50,7 @@ class OpmodeLoader()
 	/**
 	 * calls the update function on the lua opmode with a Time object as the first argument
 	 */
-	//external fun update(deltaTime: Double, elapsedTime: Double): Boolean;
+	external fun update(deltaTime: Double, elapsedTime: Double): Boolean;
 	
 	
 	private external fun internalInit(luaStdlib: LuaStdlib): Array<String>?;

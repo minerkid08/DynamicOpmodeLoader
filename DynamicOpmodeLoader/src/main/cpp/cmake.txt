@@ -6,6 +6,8 @@ add_library(
 @$
         )
 
+target_include_directories(dynamicopmodeloader PRIVATE ./)
+
 find_library(
               log-lib
               log )
