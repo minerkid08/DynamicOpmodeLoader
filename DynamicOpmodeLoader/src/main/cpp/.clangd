@@ -5,5 +5,6 @@ CompileFlags:
     -IC:\Program Files\Amazon Corretto\jdk1.8.0_282\include, 
     -IC:\Program Files\Amazon Corretto\jdk1.8.0_282\include\win32, 
     -IC:\raylib\w64devkit\x86_64-w64-mingw32\include,
+    -I..\,
     -xc
   ]

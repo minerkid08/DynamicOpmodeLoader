@@ -7,19 +7,19 @@
 
 typedef struct
 {
-  int id;
+	int id;
 	char* name;
 } Opmode;
 
 typedef struct
 {
-  int currentOpmode;
-  lua_State* l;
-  JNIEnv* env;
-  Opmode* opmodes;
-  Function* functions;
-  jobject* objects;
-  jobject currentObject;
+	int currentOpmode;
+	lua_State* l;
+	JNIEnv* env;
+	Opmode* opmodes;
+	Function* functions;
+	jobject* objects;
+	jobject currentObject;
 } Global;
 
 extern Global global;

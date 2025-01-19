@@ -3,8 +3,6 @@ project("dynamicopmodeloader")
 add_library(
             dynamicopmodeloader
              SHARED
-./dynList.c
-./main.c
 ./lua/lapi.c
 ./lua/lauxlib.c
 ./lua/lbaselib.c
@@ -39,7 +37,14 @@ add_library(
 ./lua/lutf8lib.c
 ./lua/lvm.c
 ./lua/lzio.c
+./src/dynList.c
+./src/function.c
+./src/functionBuilder.c
+./src/main.c
+./src/utils.c
         )
+
+target_include_directories(dynamicopmodeloader PRIVATE ./)
 
 find_library(
               log-lib
