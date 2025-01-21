@@ -54,6 +54,7 @@ int inited = 0;
 JNIEXPORT jobjectArray JNICALL init(JNIEnv* env, jobject this, jobject stdlib)
 {
 	global.env = env;
+	initUtils(stdlib);
 	global.opmodes = dynList_new(sizeof(Opmode), 5);
 	dynList_resize((void*)&global.opmodes, 0);
 
