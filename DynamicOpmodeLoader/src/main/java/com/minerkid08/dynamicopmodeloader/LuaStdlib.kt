@@ -6,11 +6,12 @@ class LuaStdlib
 {
 	fun print(string: String)
 	{
-		println(string);
+		Log.d("lua", string);
 	}
 	
 	fun err(msg: String)
 	{
+		Log.d("lua err", msg);
 		throw LuaError(msg);
 	}
 }
