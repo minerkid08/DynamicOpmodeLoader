@@ -6,7 +6,6 @@ open class LuaType(val clazz: Class<*>)
 	class Bool : LuaType(Boolean::class.java);
 	class String : LuaType(kotlin.String::class.java);
 	class Void : LuaType(Any::class.java);
-	class CheckRun : LuaType(Any::class.java);
 	class Object(clazz: Class<*>) : LuaType(clazz);
 }
 
@@ -59,7 +58,6 @@ class FunctionBuilder
 		{
 			for(type in argTypes)
 			{
-				if(type is LuaType.CheckRun) throw LuaError("CheckRun is not a valid argument type");
 				if(type is LuaType.Void) throw LuaError("Void is not a valid argument type");
 				funSignature += typeToStr(type);
 			}
@@ -77,7 +75,6 @@ class FunctionBuilder
 		if(type is LuaType.Double) return "D";
 		if(type is LuaType.Bool) return "Z";
 		if(type is LuaType.Void) return "V";
-		if(type is LuaType.CheckRun) return "Z";
 		if(type is LuaType.String) return "Ljava/lang/String;";
 		return 'L' + type.clazz.name.replace('.', '/') + ';';
 	}
@@ -87,7 +84,6 @@ class FunctionBuilder
 		if(type is LuaType.Double) return 3;
 		if(type is LuaType.Bool) return 1;
 		if(type is LuaType.Void) return 0;
-		if(type is LuaType.CheckRun) return -1;
 		if(type is LuaType.String) return 4;
 		if(type is LuaType.Object) return 5;
 		return 0;
