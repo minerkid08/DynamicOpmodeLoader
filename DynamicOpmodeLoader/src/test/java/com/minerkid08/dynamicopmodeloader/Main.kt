@@ -1,5 +1,10 @@
 package com.minerkid08.dynamicopmodeloader
 
+import android.os.Environment
+import org.junit.Test
+import java.nio.file.Paths
+
+
 class Action;
 
 class LuaTrajectoryBuilder()
@@ -8,38 +13,38 @@ class LuaTrajectoryBuilder()
 	{
 		fun init(builder: FunctionBuilder)
 		{
-			builder.classAddFun(
+			builder.addClassFunction(
 				LuaTrajectoryBuilder::class.java,
 				"setTangent",
-				LuaType.Void(),
-				listOf(LuaType.Double())
+				LuaType.Void,
+				listOf(LuaType.Double)
 			);
-			builder.classAddFun(
+			builder.addClassFunction(
 				LuaTrajectoryBuilder::class.java,
 				"lineToX",
-				LuaType.Void(),
-				listOf(LuaType.Double())
+				LuaType.Void,
+				listOf(LuaType.Double)
 			);
-			builder.classAddFun(
+			builder.addClassFunction(
 				LuaTrajectoryBuilder::class.java,
 				"lineToY",
-				LuaType.Void(),
-				listOf(LuaType.Double())
+				LuaType.Void,
+				listOf(LuaType.Double)
 			);
-			builder.classAddFun(
+			builder.addClassFunction(
 				LuaTrajectoryBuilder::class.java,
 				"splineToLinearHeading",
-				LuaType.Void(),
-				listOf(LuaType.Double(), LuaType.Double(), LuaType.Double(), LuaType.Double())
+				LuaType.Void,
+				listOf(LuaType.Double, LuaType.Double, LuaType.Double, LuaType.Double)
 			);
-			builder.classAddFun(
+			builder.addClassFunction(
 				LuaTrajectoryBuilder::class.java,
 				"splineToConstantHeading",
-				LuaType.Void(),
-				listOf(LuaType.Double(), LuaType.Double(), LuaType.Double())
+				LuaType.Void,
+				listOf(LuaType.Double, LuaType.Double, LuaType.Double)
 			);
 
-			builder.classAddFun(
+			builder.addClassFunction(
 				LuaTrajectoryBuilder::class.java,
 				"build",
 				LuaType.Object(Action::class.java)
@@ -87,11 +92,11 @@ class LuaAction
 		{
 			builder.setCurrentObject(LuaAction());
 
-			builder.objectAddFun("run", LuaType.Void(), listOf(LuaType.Object(Action::class.java)));
-			builder.objectAddFun(
+			builder.addObjectFunction("run", LuaType.Void, listOf(LuaType.Object(Action::class.java)));
+			builder.addObjectFunction(
 				"trajectoryAction",
 				LuaType.Object(LuaTrajectoryBuilder::class.java),
-				listOf(LuaType.Double(), LuaType.Double(), LuaType.Double())
+				listOf(LuaType.Double, LuaType.Double, LuaType.Double)
 			);
 
 			builder.createClass("Action");
@@ -110,36 +115,40 @@ class LuaAction
 	}
 }
 
-fun main()
+class Main
 {
-	val opmodeLoader = OpmodeLoader();
-	val opmodes = opmodeLoader.init() ?: return;
-
-	val builder = opmodeLoader.getFunctionBuilder();
-
-	LuaTrajectoryBuilder.init(builder);
-	LuaAction.init(builder);
-
-	for(opmode in opmodes)
+	@Test
+	fun main()
 	{
-		println("found opmode: $opmode");
-	}
-
-	opmodeLoader.loadOpmode(opmodes[0]);
-
-	opmodeLoader.start();
-
-	return;
-	val startTime = System.currentTimeMillis();
-	var lastFrameTime = startTime;
-	while(true)
-	{
-		val currentTime = System.currentTimeMillis();
-		val elapsedTime = currentTime - startTime;
-		val deltaTime = currentTime - lastFrameTime;
-
-		opmodeLoader.update(deltaTime / 1000.0, elapsedTime / 1000.0);
-
-		lastFrameTime = currentTime;
+		val opmodeLoader = OpmodeLoader();
+		val opmodes = opmodeLoader.init() ?: return;
+		
+		val builder = opmodeLoader.getFunctionBuilder();
+		
+		LuaTrajectoryBuilder.init(builder);
+		LuaAction.init(builder);
+		
+		for(opmode in opmodes)
+		{
+			println("found opmode: $opmode");
+		}
+		
+		opmodeLoader.loadOpmode(opmodes[0]);
+		
+		opmodeLoader.start();
+		
+		return;
+		val startTime = System.currentTimeMillis();
+		var lastFrameTime = startTime;
+		while(true)
+		{
+			val currentTime = System.currentTimeMillis();
+			val elapsedTime = currentTime - startTime;
+			val deltaTime = currentTime - lastFrameTime;
+			
+			opmodeLoader.update(deltaTime / 1000.0, elapsedTime / 1000.0);
+			
+			lastFrameTime = currentTime;
+		}
 	}
 }

@@ -66,14 +66,23 @@ JNIEXPORT jobjectArray JNICALL init(JNIEnv* env, jobject this, jobject stdlib)
 	inited = 1;
 
 	global.l = luaL_newstate();
-
+	
+	luaL_openlibs(global.l);
+	
+#ifdef _WIN64
+	if(luaL_dostring(global.l, "package.path = \"./lua/?.lua\""))
+#else
+	if(luaL_dostring(global.l, "2package.path = \"/sdcard/lua/?.lua\""))
+#endif
+	{
+		err("%s", lua_tostring(global.l, -1));
+		return NULL;
+	}
 	lua_pushcfunction(global.l, addOpmode);
 	lua_setglobal(global.l, "addOpmode");
 
 	lua_newtable(global.l);
 	lua_setglobal(global.l, "data");
-
-	luaL_openlibs(global.l);
 
 	initFunctionBuilder();
 #ifdef _WIN64
@@ -82,7 +91,7 @@ JNIEXPORT jobjectArray JNICALL init(JNIEnv* env, jobject this, jobject stdlib)
 	if (luaL_dofile(global.l, "/sdcard/lua/init.lua"))
 #endif
 	{
-		err("something happened :(\n%s", lua_tostring(global.l, -1));
+		err("%s", lua_tostring(global.l, -1));
 		return NULL;
 	}
 	int opmodeCount = dynList_size(global.opmodes);
@@ -120,7 +129,7 @@ JNIEXPORT void JNICALL loadOpmode(JNIEnv* env, jobject this, jstring opmodeName)
 
 	if (global.currentOpmode == -1)
 	{
-		err("cant find opmode %s", name);
+		err("cant find opmode \'%s\'", name);
 		return;
 	}
 
@@ -132,11 +141,11 @@ JNIEXPORT void JNICALL loadOpmode(JNIEnv* env, jobject this, jstring opmodeName)
 	{
 		if (lua_pcall(global.l, 0, 0, 0))
 		{
-			err("error\n%s", lua_tostring(global.l, -1));
+			err("%s", lua_tostring(global.l, -1));
 		}
 	}
 	lua_settop(global.l, 2);
-	print("loaded opmode %s\n", name);
+	print("loaded opmode \'%s\'\n", name);
 }
 
 JNIEXPORT void JNICALL start(JNIEnv* env, jobject this, int recognitionId)
@@ -148,7 +157,7 @@ JNIEXPORT void JNICALL start(JNIEnv* env, jobject this, int recognitionId)
 		lua_pushnumber(global.l, recognitionId);
 		if (lua_pcall(global.l, 1, 0, 0))
 		{
-			err("error\n%s", lua_tostring(global.l, -1));
+			err("%s", lua_tostring(global.l, -1));
 		}
 	}
 	lua_settop(global.l, 2);
@@ -164,7 +173,7 @@ JNIEXPORT void JNICALL update(JNIEnv* env, jobject this, double deltaTime, doubl
 		lua_pushnumber(global.l, elapsedTime);
 		if (lua_pcall(global.l, 2, 0, 0))
 		{
-			err("error\n%s", lua_tostring(global.l, -1));
+			err("%s", lua_tostring(global.l, -1));
 		}
 	}
 	lua_settop(global.l, 2);

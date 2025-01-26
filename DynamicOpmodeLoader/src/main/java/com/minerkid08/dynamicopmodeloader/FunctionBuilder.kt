@@ -1,38 +1,49 @@
 package com.minerkid08.dynamicopmodeloader
 
-open class LuaType(val clazz: Class<*>)
+abstract class LuaType(val clazz: Class<*>)
 {
-	class Double : LuaType(kotlin.Double::class.java);
-	class Bool : LuaType(Boolean::class.java);
-	class String : LuaType(kotlin.String::class.java);
-	class Void : LuaType(Any::class.java);
+	companion object
+	{
+		val Void = VoidT();
+		val Bool = BoolT();
+		val Double = DoubleT();
+		val String = StringT();
+	}
 	class Object(clazz: Class<*>) : LuaType(clazz);
+	class DoubleT : LuaType(kotlin.Double::class.java);
+	class BoolT : LuaType(Boolean::class.java);
+	class StringT : LuaType(kotlin.String::class.java);
+	class VoidT : LuaType(Any::class.java);
 }
 
 class FunctionBuilder
 {
 	/**
-	 * sets the object to pull functions from to expose to lua
+	 * sets the object to pull object functions from
 	 */
 	external fun <T> setCurrentObject(thing: T);
 	
+	/**
+	 * creates a class for a lua function to return
+	 * does not need to be called if a function is created for that class
+	 */
 	external fun createClass(name: String);
 	
 	/**
-	 * adds a function from java to lua
-	 *
-	 * if a class is active when this is called the function will be put in that table
-	 * else the function will be set as a global
+	 * adds a function from a java object to lua as a global
 	 */
-	fun objectAddFun(name: String, rtnType: LuaType = LuaType.Void(), argTypes: List<LuaType>? = null)
+	fun addObjectFunction(name: String, rtnType: LuaType = LuaType.Void, argTypes: List<LuaType>? = null)
 	{
 		val sig = generateSignature(rtnType, argTypes);
 		val argc = argTypes?.size ?: 0;
 		addFunction(name, sig, typeToInt(rtnType), argc);
 	}
 	
-	fun classAddFun(
-		clazz: Class<*>, name: String, rtnType: LuaType = LuaType.Void(), argTypes: List<LuaType>? = null
+	/**
+	 * adds a function from a java class to a class table in lua
+	 */
+	fun addClassFunction(
+		clazz: Class<*>, name: String, rtnType: LuaType = LuaType.Void, argTypes: List<LuaType>? = null
 	)
 	{
 		val sig = generateSignature(rtnType, argTypes);
@@ -58,7 +69,7 @@ class FunctionBuilder
 		{
 			for(type in argTypes)
 			{
-				if(type is LuaType.Void) throw LuaError("Void is not a valid argument type");
+				if(type is LuaType.VoidT) throw LuaError("Void is not a valid argument type");
 				funSignature += typeToStr(type);
 			}
 		}
@@ -72,19 +83,19 @@ class FunctionBuilder
 	
 	private fun typeToStr(type: LuaType): String
 	{
-		if(type is LuaType.Double) return "D";
-		if(type is LuaType.Bool) return "Z";
-		if(type is LuaType.Void) return "V";
-		if(type is LuaType.String) return "Ljava/lang/String;";
+		if(type is LuaType.DoubleT) return "D";
+		if(type is LuaType.BoolT) return "Z";
+		if(type is LuaType.VoidT) return "V";
+		if(type is LuaType.StringT) return "Ljava/lang/String;";
 		return 'L' + type.clazz.name.replace('.', '/') + ';';
 	}
 	
 	private fun typeToInt(type: LuaType): Int
 	{
-		if(type is LuaType.Double) return 3;
-		if(type is LuaType.Bool) return 1;
-		if(type is LuaType.Void) return 0;
-		if(type is LuaType.String) return 4;
+		if(type is LuaType.DoubleT) return 3;
+		if(type is LuaType.BoolT) return 1;
+		if(type is LuaType.VoidT) return 0;
+		if(type is LuaType.StringT) return 4;
 		if(type is LuaType.Object) return 5;
 		return 0;
 	}

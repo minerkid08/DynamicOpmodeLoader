@@ -49,7 +49,6 @@ void initFunctionBuilder()
 
 void reset()
 {
-    print("reset\n");
 	int s = dynList_size(global.objects);
 	for (int i = 0; i < s; i++)
 		(*global.env)->DeleteGlobalRef(global.env, global.objects[i]);
@@ -270,7 +269,6 @@ int callFunc(lua_State* l)
 	Function* fun = global.functions + id;
 
 	jvalue* args = checkArgs(l, fun, 0);
-    print("call1");
 	return call(l, fun, fun->obj, args);
 }
 
@@ -289,7 +287,6 @@ int callFunc2(lua_State* l)
 		luaL_error(l, "attempted to call function on a nil object");
 	jobject ref = lua_touserdata(l, -1);
 	lua_pop(l, 1);
-    print("call2");
     if((*global.env)->IsSameObject(global.env, ref, NULL))
         print("ref is null :(");
 
