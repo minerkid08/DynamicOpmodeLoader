@@ -4,4 +4,5 @@ plugins {
 	alias(libs.plugins.kotlin.android) apply false
 	alias(libs.plugins.android.library) apply false
 	alias(libs.plugins.jetbrains.kotlin.jvm) apply false
+	id("org.jetbrains.dokka") version "2.0.0"
 }

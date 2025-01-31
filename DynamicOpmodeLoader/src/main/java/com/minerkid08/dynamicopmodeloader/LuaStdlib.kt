@@ -12,6 +12,6 @@ class LuaStdlib
 	fun err(msg: String)
 	{
 		Log.d("lua err", msg);
-		require(false) { msg };
+		throw LuaError(msg);
 	}
 }
