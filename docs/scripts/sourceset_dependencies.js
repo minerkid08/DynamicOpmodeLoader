@@ -1,0 +1,1 @@
+sourceset_dependencies = '{":DynamicOpmodeLoader:dokkaHtmlPartial/debug":[],":DynamicOpmodeLoader:dokkaHtmlPartial/main":[],":DynamicOpmodeLoader:dokkaHtmlPartial/release":[]}'

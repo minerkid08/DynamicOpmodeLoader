@@ -110,8 +110,9 @@ class TestObjectGetter
 FunctionBuilder builder = opmodeLoader.getFunctionBuilder();
 builder.addClassFunction(TestObject, "doThing", LuaType.String, Arrays.asList(LuaType.Number, LuaType.Number));
 
-TestObjectBuilder testObject = new TestObjectBuilder();
-builder.addObjectFunction(testObjectBuilder, "getTestObject", LuaType.Object(TestObject));
+TestObjectBuilder testObjectBuilder = new TestObjectBuilder();
+builder.setCurrentObject(testObjectBuilder);
+builder.addObjectFunction("getTestObject", LuaType.Object(TestObject));
 ```
 ### Lua
 
@@ -130,4 +131,6 @@ addOpmode({
 })
 ```
 
-upload these 
+To send your code to the robot open the terminal in android studio and run `bash sync.sh`. If you are on windows than you may need to run `sh sync.sh` as bash is not installed by default.
+
+# (API Docs)[about:blank]
