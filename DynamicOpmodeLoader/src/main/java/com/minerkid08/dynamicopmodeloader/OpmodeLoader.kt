@@ -28,11 +28,10 @@ class OpmodeLoader()
 	{
 		val opmodes = internalInit(stdlib);
 		
-		//builder.setCurrentObject(stdlib);
+		builder.setCurrentObject(stdlib);
 		
-		//builder.addFun("print", LuaType.Void, listOf(LuaType.String));
-		//builder.addFun("err", LuaType.Void, listOf(LuaType.String));
-		//builder.addFun("stop", LuaType.CheckRun);
+		builder.addObjectFunction("print", LuaType.Void, listOf(LuaType.String));
+		builder.addObjectFunction("err", LuaType.Void, listOf(LuaType.String));
 		
 		return opmodes;
 	}

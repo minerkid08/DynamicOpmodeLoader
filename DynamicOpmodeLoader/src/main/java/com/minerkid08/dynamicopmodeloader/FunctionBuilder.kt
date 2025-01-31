@@ -1,5 +1,7 @@
 package com.minerkid08.dynamicopmodeloader
 
+import java.util.Arrays
+
 abstract class LuaType(val clazz: Class<*>)
 {
 	companion object
