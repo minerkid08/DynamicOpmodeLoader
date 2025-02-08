@@ -1,9 +1,6 @@
 package com.minerkid08.dynamicopmodeloader
 
-import android.os.Environment
 import org.junit.Test
-import java.nio.file.Paths
-
 
 class Action;
 
@@ -16,31 +13,31 @@ class LuaTrajectoryBuilder()
 			builder.addClassFunction(
 				LuaTrajectoryBuilder::class.java,
 				"setTangent",
-				LuaType.Void,
+				LuaType.Builder,
 				listOf(LuaType.Double)
 			);
 			builder.addClassFunction(
 				LuaTrajectoryBuilder::class.java,
 				"lineToX",
-				LuaType.Void,
+				LuaType.Builder,
 				listOf(LuaType.Double)
 			);
 			builder.addClassFunction(
 				LuaTrajectoryBuilder::class.java,
 				"lineToY",
-				LuaType.Void,
+				LuaType.Builder,
 				listOf(LuaType.Double)
 			);
 			builder.addClassFunction(
 				LuaTrajectoryBuilder::class.java,
 				"splineToLinearHeading",
-				LuaType.Void,
+				LuaType.Builder,
 				listOf(LuaType.Double, LuaType.Double, LuaType.Double, LuaType.Double)
 			);
 			builder.addClassFunction(
 				LuaTrajectoryBuilder::class.java,
 				"splineToConstantHeading",
-				LuaType.Void,
+				LuaType.Builder,
 				listOf(LuaType.Double, LuaType.Double, LuaType.Double)
 			);
 
@@ -120,35 +117,27 @@ class Main
 	@Test
 	fun main()
 	{
-		val opmodeLoader = OpmodeLoader();
-		val opmodes = opmodeLoader.init() ?: return;
-		
-		val builder = opmodeLoader.getFunctionBuilder();
-		
-		LuaTrajectoryBuilder.init(builder);
-		LuaAction.init(builder);
-		
-		for(opmode in opmodes)
-		{
-			println("found opmode: $opmode");
-		}
-		
-		opmodeLoader.loadOpmode(opmodes[0]);
-		
-		opmodeLoader.start();
-		
-		return;
-		val startTime = System.currentTimeMillis();
-		var lastFrameTime = startTime;
-		while(true)
-		{
-			val currentTime = System.currentTimeMillis();
-			val elapsedTime = currentTime - startTime;
-			val deltaTime = currentTime - lastFrameTime;
-			
-			opmodeLoader.update(deltaTime / 1000.0, elapsedTime / 1000.0);
-			
-			lastFrameTime = currentTime;
-		}
+		doThing();
+		doThing();
 	}
+}
+fun doThing()
+{
+	val opmodeLoader = OpmodeLoader();
+	
+	val builder = opmodeLoader.getFunctionBuilder();
+	
+	LuaTrajectoryBuilder.init(builder);
+	LuaAction.init(builder);
+	
+	val opmodes = opmodeLoader.init() ?: return;
+	
+	for(opmode in opmodes)
+	{
+		println("found opmode: $opmode");
+	}
+	
+	opmodeLoader.loadOpmode(opmodes[0]);
+	
+	opmodeLoader.start();
 }

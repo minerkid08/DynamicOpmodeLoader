@@ -30,14 +30,17 @@ jstring getClassName(jclass class)
 int callFunc(lua_State* l);
 int callFunc2(lua_State* l);
 
-void initFunctionBuilder()
+void fbInit()
 {
-	global.objects = dynList_new(5, sizeof(jobject));
-	dynList_resize((void**)&global.objects, 0);
+	global.objects = dynList_new(0, sizeof(jobject));
+	dynList_reserve((void**)&global.objects, 10);
 
-	global.functions = dynList_new(10, sizeof(Function));
-	dynList_resize((void**)&global.functions, 0);
+	global.functions = dynList_new(0, sizeof(Function));
+	dynList_reserve((void**)&global.functions, 20);
+}
 
+void fbInitLua()
+{
 	luaL_newmetatable(global.l, "luaFunc");
 	lua_pushcfunction(global.l, callFunc);
 	lua_setfield(global.l, -2, "__call");
@@ -47,13 +50,13 @@ void initFunctionBuilder()
 	lua_setfield(global.l, -2, "__call");
 }
 
-void reset()
+void fbReset()
 {
 	int s = dynList_size(global.objects);
 	for (int i = 0; i < s; i++)
 		(*global.env)->DeleteGlobalRef(global.env, global.objects[i]);
-	dynList_free(global.objects);
-	dynList_free(global.functions);
+	dynList_resize((void**)&global.objects, 0);
+	dynList_resize((void**)&global.functions, 0);
 }
 
 JNIEXPORT void JNICALL createClass(JNIEnv* env, jobject this, jstring str)
@@ -98,7 +101,7 @@ JNIEXPORT void JNICALL addFun(JNIEnv* env, jobject this, jstring name, jstring s
 	lua_setmetatable(global.l, -2);
 	lua_setglobal(global.l, name2);
 
-	print("add fun %s with id %d with sig %s\n", name2, functionId, signature2);
+	print("add fun %s with id %d with sig %s", name2, functionId, signature2);
 
 	(*env)->ReleaseStringUTFChars(env, name, name2);
 	(*env)->ReleaseStringUTFChars(env, signature, signature2);
@@ -137,7 +140,7 @@ JNIEXPORT void JNICALL addFunc(JNIEnv* env, jobject this, jclass class, jstring 
 	lua_setfield(global.l, -2, name2);
 	lua_setglobal(global.l, className);
 
-	print("add class fun %s with id %d with sig %s\n", name2, functionId, signature2);
+	print("add class fun %s with id %d with sig %s", name2, functionId, signature2);
 
 	(*env)->ReleaseStringUTFChars(env, name, name2);
 	(*env)->ReleaseStringUTFChars(env, signature, signature2);
@@ -149,7 +152,7 @@ jvalue* checkArgs(lua_State* l, Function* fun, int s)
 	int argc = lua_gettop(l) - 1 - s;
 	if (fun->argc != argc)
 	{
-		luaL_error(l, "expected %d args, got %d\n", fun->argc, argc);
+		luaL_error(l, "expected %d args, got %d", fun->argc, argc);
 	}
 
 	jvalue* args = 0;
@@ -207,6 +210,12 @@ int call(lua_State* l, Function* fun, jobject obj, jvalue* args)
 		function_callVX(fun, obj, args);
 		free(args);
 		return 0;
+	}
+	case -1: {
+		function_callVX(fun, obj, args);
+		free(args);
+		lua_pushvalue(l, 2);
+		return 1;
 	}
 	case LUA_TNUMBER: {
 		double rtn = function_callDX(fun, obj, args);
@@ -287,11 +296,11 @@ int callFunc2(lua_State* l)
 		luaL_error(l, "attempted to call function on a nil object");
 	jobject ref = lua_touserdata(l, -1);
 	lua_pop(l, 1);
-    if((*global.env)->IsSameObject(global.env, ref, NULL))
-        print("ref is null :(");
+	if ((*global.env)->IsSameObject(global.env, ref, NULL))
+		luaL_error(l, "internal handle to jobject is null");
 
-    int res = call(l, fun, ref, args);
-    if((*global.env)->ExceptionCheck(global.env))
-        (*global.env)->ExceptionDescribe(global.env);
+	int res = call(l, fun, ref, args);
+	if ((*global.env)->ExceptionCheck(global.env))
+		(*global.env)->ExceptionDescribe(global.env);
 	return res;
 }

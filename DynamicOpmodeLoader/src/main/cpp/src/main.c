@@ -12,6 +12,7 @@
 #include "utils.h"
 
 #define init Java_com_minerkid08_dynamicopmodeloader_OpmodeLoader_internalInit
+#define init2 Java_com_minerkid08_dynamicopmodeloader_OpmodeLoader_internalInit2
 #define loadOpmode Java_com_minerkid08_dynamicopmodeloader_OpmodeLoader_loadOpmode
 #define start Java_com_minerkid08_dynamicopmodeloader_OpmodeLoader_start
 #define update Java_com_minerkid08_dynamicopmodeloader_OpmodeLoader_update
@@ -49,34 +50,52 @@ int addOpmode(lua_State* l)
 	return 0;
 }
 
+void internalInit()
+{
+	global.opmodes = dynList_new(0, sizeof(Opmode));
+	dynList_reserve((void**)&global.opmodes, 5);
+}
+
 int inited = 0;
 
-JNIEXPORT jobjectArray JNICALL init(JNIEnv* env, jobject this, jobject stdlib)
+JNIEXPORT void JNICALL init2(JNIEnv* env, jobject this, jobject stdlib)
 {
 	global.env = env;
 	initUtils(stdlib);
 	global.opmodes = dynList_new(sizeof(Opmode), 5);
 	dynList_resize((void*)&global.opmodes, 0);
 
-	if (inited)
+	if (!inited)
 	{
-		reset();
+    fbInit();
+		internalInit();
+		inited = 1;
+	}
+	else
+	{
+		int opmodeLen = dynList_size(global.opmodes);
+		for (int i = 0; i < opmodeLen; i++)
+		{
+			char* str = global.opmodes[i].name;
+			free(str);
+		}
+		dynList_resize((void**)&global.opmodes, 0);
+		fbReset();
 		lua_close(global.l);
 	}
-	inited = 1;
 
 	global.l = luaL_newstate();
-	
+
 	luaL_openlibs(global.l);
-	
+
 #ifdef _WIN64
-	if(luaL_dostring(global.l, "package.path = \"./lua/?.lua\""))
+	if (luaL_dostring(global.l, "package.path = \"./lua/?.lua\""))
 #else
-	if(luaL_dostring(global.l, "2package.path = \"/sdcard/lua/?.lua\""))
+	if (luaL_dostring(global.l, "package.path = \"/sdcard/lua/?.lua\""))
 #endif
 	{
 		err("%s", lua_tostring(global.l, -1));
-		return NULL;
+		return;
 	}
 	lua_pushcfunction(global.l, addOpmode);
 	lua_setglobal(global.l, "addOpmode");
@@ -84,7 +103,12 @@ JNIEXPORT jobjectArray JNICALL init(JNIEnv* env, jobject this, jobject stdlib)
 	lua_newtable(global.l);
 	lua_setglobal(global.l, "data");
 
-	initFunctionBuilder();
+	fbInitLua();
+}
+
+JNIEXPORT jobjectArray JNICALL init(JNIEnv* env, jobject this)
+{
+	global.env = env;
 #ifdef _WIN64
 	if (luaL_dofile(global.l, "lua/init.lua"))
 #else
@@ -142,6 +166,7 @@ JNIEXPORT void JNICALL loadOpmode(JNIEnv* env, jobject this, jstring opmodeName)
 		if (lua_pcall(global.l, 0, 0, 0))
 		{
 			err("%s", lua_tostring(global.l, -1));
+			return;
 		}
 	}
 	lua_settop(global.l, 2);
