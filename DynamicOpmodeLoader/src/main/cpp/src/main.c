@@ -16,6 +16,8 @@
 #define loadOpmode Java_com_minerkid08_dynamicopmodeloader_OpmodeLoader_loadOpmode
 #define start Java_com_minerkid08_dynamicopmodeloader_OpmodeLoader_start
 #define update Java_com_minerkid08_dynamicopmodeloader_OpmodeLoader_update
+#define callFun Java_com_minerkid08_dynamicopmodeloader_OpmodeLoader_callFun
+#define callOpmodeFun Java_com_minerkid08_dynamicopmodeloader_OpmodeLoader_callOpmodeFun
 
 Global global;
 
@@ -67,7 +69,7 @@ JNIEXPORT void JNICALL init2(JNIEnv* env, jobject this, jobject stdlib)
 
 	if (!inited)
 	{
-    fbInit();
+		fbInit();
 		internalInit();
 		inited = 1;
 	}
@@ -200,6 +202,80 @@ JNIEXPORT void JNICALL update(JNIEnv* env, jobject this, double deltaTime, doubl
 		{
 			err("%s", lua_tostring(global.l, -1));
 		}
+	}
+	lua_settop(global.l, 2);
+}
+
+static jmethodID getBool = 0L;
+static jmethodID getInt = 0L;
+static jmethodID getDouble = 0L;
+
+void pushArgs(JNIEnv* env, jobjectArray args, int len)
+{
+	for (int i = 0; i < len; i++)
+	{
+		jobject elem = (*env)->GetObjectArrayElement(env, args, i);
+		jclass class = (*env)->GetObjectClass(env, elem);
+		jstring className = getClassName(class);
+		const char* name = (*env)->GetStringUTFChars(env, className, 0);
+
+		if (strcmp(name, "Boolean") == 0)
+		{
+			if (!getBool)
+				getBool = (*env)->GetMethodID(env, class, "booleanValue", "()Z");
+			char value = (*env)->CallBooleanMethod(env, elem, getBool);
+			lua_pushboolean(global.l, value);
+		}
+		else if (strcmp(name, "Integer") == 0)
+		{
+			if (!getInt)
+				getInt = (*env)->GetMethodID(env, class, "intValue", "()I");
+			int value = (*env)->CallBooleanMethod(env, elem, getInt);
+			lua_pushinteger(global.l, value);
+		}
+		else if (strcmp(name, "Double") == 0)
+		{
+			if (!getDouble)
+				getDouble = (*env)->GetMethodID(env, class, "doubleValue", "()D");
+			double value = (*env)->CallBooleanMethod(env, elem, getDouble);
+			lua_pushnumber(global.l, value);
+		}
+		else if (strcmp(name, "String") == 0)
+		{
+			const char* str = (*env)->GetStringUTFChars(env, elem, 0);
+			lua_pushstring(global.l, str);
+			(*env)->ReleaseStringUTFChars(env, elem, str);
+		}
+		(*env)->ReleaseStringUTFChars(env, className, name);
+	}
+}
+
+JNIEXPORT void JNICALL callFun(JNIEnv* env, jobject this, jstring name, jobjectArray args)
+{
+	global.env = env;
+	const char* nameStr = (*env)->GetStringUTFChars(env, name, 0);
+	lua_getglobal(global.l, nameStr);
+	if (lua_type(global.l, -1) == LUA_TFUNCTION)
+	{
+		int len = (*env)->GetArrayLength(env, args);
+		pushArgs(env, args, len);
+		if (lua_pcall(global.l, len, 0, 0))
+			err("%s", lua_tostring(global.l, -1));
+	}
+	lua_settop(global.l, 2);
+}
+
+JNIEXPORT void JNICALL callOpmodeFun(JNIEnv* env, jobject this, jstring name, jobjectArray args)
+{
+	global.env = env;
+	const char* nameStr = (*env)->GetStringUTFChars(env, name, 0);
+	lua_getfield(global.l, -1, nameStr);
+	if (lua_type(global.l, -1) == LUA_TFUNCTION)
+	{
+		int len = (*env)->GetArrayLength(env, args);
+		pushArgs(env, args, len);
+		if (lua_pcall(global.l, len, 0, 0))
+			err("%s", lua_tostring(global.l, -1));
 	}
 	lua_settop(global.l, 2);
 }

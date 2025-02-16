@@ -52,8 +52,10 @@ class OpmodeLoader()
 	/**
 	 * calls the update function on the lua opmode with a Time object as the first argument
 	 */
-	external fun update(deltaTime: Double, elapsedTime: Double): Boolean;
+	external fun update(deltaTime: Double, elapsedTime: Double);
 	
+	external fun callFun(name: String, vararg args: Any);
+	external fun callOpmodeFun(name: String, vararg args: Any);
 	
 	private external fun internalInit2(luaStdlib: LuaStdlib);
 	private external fun internalInit(): Array<String>?;

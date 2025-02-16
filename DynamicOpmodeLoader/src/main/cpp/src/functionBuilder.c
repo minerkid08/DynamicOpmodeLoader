@@ -15,18 +15,6 @@
 #define addFun Java_com_minerkid08_dynamicopmodeloader_FunctionBuilder_addFunction
 #define addFunc Java_com_minerkid08_dynamicopmodeloader_FunctionBuilder_addFunctionc
 
-jmethodID getClassFun = 0l;
-
-jstring getClassName(jclass class)
-{
-	if (!getClassFun)
-	{
-		jclass c = (*global.env)->GetObjectClass(global.env, class);
-		getClassFun = (*global.env)->GetMethodID(global.env, c, "getSimpleName", "()Ljava/lang/String;");
-	}
-	return (*global.env)->CallObjectMethod(global.env, class, getClassFun);
-}
-
 int callFunc(lua_State* l);
 int callFunc2(lua_State* l);
 

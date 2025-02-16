@@ -1,6 +1,7 @@
 package com.minerkid08.dynamicopmodeloader
 
 import org.junit.Test
+import java.lang.Thread.sleep
 
 class Action;
 
@@ -118,7 +119,11 @@ class Main
 	fun main()
 	{
 		doThing();
-		doThing();
+		//FileServer.start();
+		//while(true)
+		//{
+		//	sleep(1000);
+		//}
 	}
 }
 fun doThing()
