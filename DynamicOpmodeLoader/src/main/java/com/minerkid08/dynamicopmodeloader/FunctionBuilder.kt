@@ -1,7 +1,5 @@
 package com.minerkid08.dynamicopmodeloader
 
-import java.util.Arrays
-
 abstract class LuaType(val clazz: Class<*>)
 {
 	companion object
@@ -10,12 +8,14 @@ abstract class LuaType(val clazz: Class<*>)
 		val Bool = BoolT();
 		val Double = DoubleT();
 		val String = StringT();
+		val Builder = BuilderT();
 	}
 	class Object(clazz: Class<*>) : LuaType(clazz);
 	class DoubleT : LuaType(kotlin.Double::class.java);
 	class BoolT : LuaType(Boolean::class.java);
 	class StringT : LuaType(kotlin.String::class.java);
 	class VoidT : LuaType(Any::class.java);
+	class BuilderT: LuaType(Any::class.java);
 }
 
 class FunctionBuilder
@@ -72,6 +72,7 @@ class FunctionBuilder
 			for(type in argTypes)
 			{
 				if(type is LuaType.VoidT) throw LuaError("Void is not a valid argument type");
+				if(type is LuaType.BuilderT) throw LuaError("Builder is not a valid argument type");
 				funSignature += typeToStr(type);
 			}
 		}
@@ -88,6 +89,7 @@ class FunctionBuilder
 		if(type is LuaType.DoubleT) return "D";
 		if(type is LuaType.BoolT) return "Z";
 		if(type is LuaType.VoidT) return "V";
+		if(type is LuaType.BuilderT) return "V";
 		if(type is LuaType.StringT) return "Ljava/lang/String;";
 		return 'L' + type.clazz.name.replace('.', '/') + ';';
 	}
@@ -99,6 +101,7 @@ class FunctionBuilder
 		if(type is LuaType.VoidT) return 0;
 		if(type is LuaType.StringT) return 4;
 		if(type is LuaType.Object) return 5;
+		if(type is LuaType.BuilderT) return 0xff;
 		return 0;
 	}
 }

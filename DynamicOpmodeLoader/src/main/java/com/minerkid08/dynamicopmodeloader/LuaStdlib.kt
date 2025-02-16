@@ -11,7 +11,7 @@ class LuaStdlib
 	
 	fun err(msg: String)
 	{
-		Log.d("lua err", msg);
+		Log.e("lua", msg);
 		throw LuaError(msg);
 	}
 }
