@@ -145,4 +145,7 @@ fun doThing()
 	opmodeLoader.loadOpmode(opmodes[0]);
 	
 	opmodeLoader.start();
+	
+	opmodeLoader.callFun("dothing4", 69, 420.0);
+	opmodeLoader.callOpmodeFun("dothing", "what", 69, 420.0);
 }

@@ -237,7 +237,7 @@ void pushArgs(JNIEnv* env, jobjectArray args, int len)
 		{
 			if (!getDouble)
 				getDouble = (*env)->GetMethodID(env, class, "doubleValue", "()D");
-			double value = (*env)->CallBooleanMethod(env, elem, getDouble);
+			double value = (*env)->CallDoubleMethod(env, elem, getDouble);
 			lua_pushnumber(global.l, value);
 		}
 		else if (strcmp(name, "String") == 0)
@@ -262,6 +262,8 @@ JNIEXPORT void JNICALL callFun(JNIEnv* env, jobject this, jstring name, jobjectA
 		if (lua_pcall(global.l, len, 0, 0))
 			err("%s", lua_tostring(global.l, -1));
 	}
+	else
+		err("undefined function: \'%s\'", nameStr);
 	lua_settop(global.l, 2);
 }
 
@@ -277,5 +279,7 @@ JNIEXPORT void JNICALL callOpmodeFun(JNIEnv* env, jobject this, jstring name, jo
 		if (lua_pcall(global.l, len, 0, 0))
 			err("%s", lua_tostring(global.l, -1));
 	}
+	else
+		err("undefined opmode function: \'%s\'", nameStr);
 	lua_settop(global.l, 2);
 }
