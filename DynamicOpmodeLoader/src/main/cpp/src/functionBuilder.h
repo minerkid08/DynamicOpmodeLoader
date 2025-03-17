@@ -1,4 +1,5 @@
 #pragma once
 
-void initFunctionBuilder();
-void reset();
+void fbInit();
+void fbInitLua();
+void fbReset();

@@ -1,6 +1,7 @@
-#include <malloc.h>
 #include "utils.h"
 #include "global.h"
+#include "jni.h"
+#include <malloc.h>
 
 jobject obj;
 jmethodID printId;
@@ -27,7 +28,7 @@ void err(const char* fmt, ...)
 
 void initUtils(jobject object)
 {
-	if(obj)
+	if (obj)
 		(*global.env)->DeleteGlobalRef(global.env, obj);
 	else
 	{
@@ -37,4 +38,16 @@ void initUtils(jobject object)
 		buf = malloc(256);
 	}
 	obj = (*global.env)->NewGlobalRef(global.env, object);
+}
+
+static jmethodID getClassFun = 0;
+
+jstring getClassName(jclass class)
+{
+	if (!getClassFun)
+	{
+		jclass c = (*global.env)->GetObjectClass(global.env, class);
+		getClassFun = (*global.env)->GetMethodID(global.env, c, "getSimpleName", "()Ljava/lang/String;");
+	}
+	return (*global.env)->CallObjectMethod(global.env, class, getClassFun);
 }

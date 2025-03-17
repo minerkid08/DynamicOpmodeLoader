@@ -13,6 +13,16 @@ class OpmodeLoader()
 	private val stdlib = LuaStdlib();
 	private val builder = FunctionBuilder();
 	
+	init
+	{
+		internalInit2(stdlib);
+		
+		builder.setCurrentObject(stdlib);
+		
+		builder.addObjectFunction("print", LuaType.Void, listOf(LuaType.String));
+		builder.addObjectFunction("err", LuaType.Void, listOf(LuaType.String));
+	}
+	
 	/**
 	 * returns a function builder object for exposing functions to lua
 	 */
@@ -26,14 +36,7 @@ class OpmodeLoader()
 	 */
 	fun init(): Array<String>?
 	{
-		val opmodes = internalInit(stdlib);
-		
-		builder.setCurrentObject(stdlib);
-		
-		builder.addObjectFunction("print", LuaType.Void, listOf(LuaType.String));
-		builder.addObjectFunction("err", LuaType.Void, listOf(LuaType.String));
-		
-		return opmodes;
+		return internalInit();
 	}
 	
 	/**
@@ -49,8 +52,11 @@ class OpmodeLoader()
 	/**
 	 * calls the update function on the lua opmode with a Time object as the first argument
 	 */
-	external fun update(deltaTime: Double, elapsedTime: Double): Boolean;
+	external fun update(deltaTime: Double, elapsedTime: Double);
 	
+	external fun callFun(name: String, vararg args: Any);
+	external fun callOpmodeFun(name: String, vararg args: Any);
 	
-	private external fun internalInit(luaStdlib: LuaStdlib): Array<String>?;
+	private external fun internalInit2(luaStdlib: LuaStdlib);
+	private external fun internalInit(): Array<String>?;
 }
