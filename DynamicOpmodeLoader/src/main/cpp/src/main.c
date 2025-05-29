@@ -2,6 +2,7 @@
 #include "lua/lauxlib.h"
 #include "lua/lua.h"
 #include "lua/lualib.h"
+
 #include <jni.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -90,7 +91,7 @@ JNIEXPORT void JNICALL init2(JNIEnv* env, jobject this, jobject stdlib)
 
 	luaL_openlibs(global.l);
 
-#ifdef _WIN64
+#ifndef ANDROID
 	if (luaL_dostring(global.l, "package.path = \"./lua/?.lua\""))
 #else
 	if (luaL_dostring(global.l, "package.path = \"/sdcard/lua/?.lua\""))
@@ -111,7 +112,7 @@ JNIEXPORT void JNICALL init2(JNIEnv* env, jobject this, jobject stdlib)
 JNIEXPORT jobjectArray JNICALL init(JNIEnv* env, jobject this)
 {
 	global.env = env;
-#ifdef _WIN64
+#ifndef ANDROID
 	if (luaL_dofile(global.l, "lua/init.lua"))
 #else
 	if (luaL_dofile(global.l, "/sdcard/lua/init.lua"))

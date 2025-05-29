@@ -6,12 +6,12 @@ addOpmode({
 	name = "testOpmode",
 	init = function ()
 		action = trajectoryAction(0, 0, 0)
-				:line(20)
-				:line(0)
-				:line(1)
-				:line(2)
-				:line(3)
-				:build();
+			:line(20)
+			:line(0)
+			:line(1)
+			:line(2)
+			:line(3)
+			:build();
 	end,
 	start = function ()
 		run(action);

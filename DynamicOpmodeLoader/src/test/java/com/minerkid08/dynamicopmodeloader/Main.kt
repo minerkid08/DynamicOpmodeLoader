@@ -1,33 +1,25 @@
 package com.minerkid08.dynamicopmodeloader
 
+import org.apache.ftpserver.usermanager.UserFactory
+import org.apache.ftpserver.usermanager.impl.WritePermission
 import org.junit.Test
-import java.lang.Thread.sleep
 
 class Action;
 
-class LuaTrajectoryBuilder()
+class LuaTrajectoryBuilder
 {
 	companion object
 	{
 		fun init(builder: FunctionBuilder)
 		{
 			builder.addClassFunction(
-				LuaTrajectoryBuilder::class.java,
-				"setTangent",
-				LuaType.Builder,
-				listOf(LuaType.Double)
+				LuaTrajectoryBuilder::class.java, "setTangent", LuaType.Builder, listOf(LuaType.Double)
 			);
 			builder.addClassFunction(
-				LuaTrajectoryBuilder::class.java,
-				"lineToX",
-				LuaType.Builder,
-				listOf(LuaType.Double)
+				LuaTrajectoryBuilder::class.java, "lineToX", LuaType.Builder, listOf(LuaType.Double)
 			);
 			builder.addClassFunction(
-				LuaTrajectoryBuilder::class.java,
-				"lineToY",
-				LuaType.Builder,
-				listOf(LuaType.Double)
+				LuaTrajectoryBuilder::class.java, "lineToY", LuaType.Builder, listOf(LuaType.Double)
 			);
 			builder.addClassFunction(
 				LuaTrajectoryBuilder::class.java,
@@ -43,9 +35,7 @@ class LuaTrajectoryBuilder()
 			);
 
 			builder.addClassFunction(
-				LuaTrajectoryBuilder::class.java,
-				"build",
-				LuaType.Object(Action::class.java)
+				LuaTrajectoryBuilder::class.java, "build", LuaType.Object(Action::class.java)
 			);
 		}
 	}
@@ -118,34 +108,39 @@ class Main
 	@Test
 	fun main()
 	{
-		doThing();
-		//FileServer.start();
-		//while(true)
-		//{
-		//	sleep(1000);
-		//}
+		val opmodeLoader = OpmodeLoader();
+
+		val userBuilder = UserFactory();
+		userBuilder.name = "user";
+		userBuilder.password = "user";
+		userBuilder.homeDirectory = "uploads";
+		userBuilder.authorities = listOf(WritePermission());
+		val user = userBuilder.createUser();
+		FileServer.start(user);
+
+		while(true)
+		{
+
+		}
+
+
+		val builder = opmodeLoader.getFunctionBuilder();
+
+		LuaTrajectoryBuilder.init(builder);
+		LuaAction.init(builder);
+
+		val opmodes = opmodeLoader.init()?:return;
+
+		for(opmode in opmodes)
+		{
+			println("found opmode: $opmode");
+		}
+
+		opmodeLoader.loadOpmode(opmodes[0]);
+
+		opmodeLoader.start();
+
+		opmodeLoader.callFun("dothing4", 69, 420.0);
+		opmodeLoader.callOpmodeFun("dothing", "what", 69, 420.0);
 	}
-}
-fun doThing()
-{
-	val opmodeLoader = OpmodeLoader();
-	
-	val builder = opmodeLoader.getFunctionBuilder();
-	
-	LuaTrajectoryBuilder.init(builder);
-	LuaAction.init(builder);
-	
-	val opmodes = opmodeLoader.init() ?: return;
-	
-	for(opmode in opmodes)
-	{
-		println("found opmode: $opmode");
-	}
-	
-	opmodeLoader.loadOpmode(opmodes[0]);
-	
-	opmodeLoader.start();
-	
-	opmodeLoader.callFun("dothing4", 69, 420.0);
-	opmodeLoader.callOpmodeFun("dothing", "what", 69, 420.0);
 }
