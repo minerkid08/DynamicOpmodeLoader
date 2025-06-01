@@ -111,7 +111,7 @@ class FunctionBuilder
 			is LuaType.VoidT -> 0;
 			is LuaType.StringT -> 4;
 			is LuaType.Object -> 5;
-			is LuaType.BuilderT -> 0xff;
+			is LuaType.BuilderT -> -1;
 			else -> 0;
 		}
 	}

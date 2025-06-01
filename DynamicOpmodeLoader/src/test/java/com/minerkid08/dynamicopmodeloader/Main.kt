@@ -1,7 +1,5 @@
 package com.minerkid08.dynamicopmodeloader
 
-import org.apache.ftpserver.usermanager.UserFactory
-import org.apache.ftpserver.usermanager.impl.WritePermission
 import org.junit.Test
 
 class Action;
@@ -108,21 +106,8 @@ class Main
 	@Test
 	fun main()
 	{
+		System.loadLibrary("dynamicopmodeloader");
 		val opmodeLoader = OpmodeLoader();
-
-		val userBuilder = UserFactory();
-		userBuilder.name = "user";
-		userBuilder.password = "user";
-		userBuilder.homeDirectory = "uploads";
-		userBuilder.authorities = listOf(WritePermission());
-		val user = userBuilder.createUser();
-		FileServer.start(user);
-
-		while(true)
-		{
-
-		}
-
 
 		val builder = opmodeLoader.getFunctionBuilder();
 

@@ -6,7 +6,6 @@ class OpmodeLoader()
 	{
 		init
 		{
-			System.loadLibrary("dynamicopmodeloader");
 		}
 	}
 	

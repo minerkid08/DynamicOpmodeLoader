@@ -107,7 +107,10 @@ JNIEXPORT void JNICALL addFunc(JNIEnv* env, jobject this, jclass class, jstring 
 	dynList_resize((void**)&global.functions, functionId + 1);
 	Function* fun = global.functions + functionId;
 
-	function_initX(fun, class, name2, signature2, rtnType, argc);
+    char rtnType2 = rtnType;
+    if(rtnType == -1)
+        rtnType2 = -1;
+	function_initX(fun, class, name2, signature2, rtnType2, argc);
 
 	jstring className2 = getClassName(class);
 	const char* className = (*env)->GetStringUTFChars(env, className2, NULL);
@@ -116,7 +119,7 @@ JNIEXPORT void JNICALL addFunc(JNIEnv* env, jobject this, jclass class, jstring 
 
 	if (lua_type(global.l, -1) == LUA_TNIL)
 	{
-		lua_pop(global.l, -1);
+		lua_pop(global.l, 1);
 		lua_newtable(global.l);
 	}
 
@@ -199,7 +202,7 @@ int call(lua_State* l, Function* fun, jobject obj, jvalue* args)
 		free(args);
 		return 0;
 	}
-	case -1: {
+	case 255: {
 		function_callVX(fun, obj, args);
 		free(args);
 		lua_pushvalue(l, 2);

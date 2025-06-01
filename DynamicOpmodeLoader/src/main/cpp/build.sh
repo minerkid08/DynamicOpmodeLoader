@@ -1,1 +1,1 @@
-gcc -shared -fpic -o ../../test/jniLibs/libdynamicopmodeloader.so -I./ -Iinclude -g src/*.c src/unpack/*.c include/lua/*.c -I/usr/lib/jvm/java-21-amazon-corretto/include -I/usr/lib/jvm/java-21-amazon-corretto/include/linux
+gcc -shared -fpic -o ../../test/jniLibs/libdynamicopmodeloader.so -I./ -Iinclude -g src/*.c include/lua/*.c -I/usr/lib/jvm/java-21-amazon-corretto/include -I/usr/lib/jvm/java-21-amazon-corretto/include/linux

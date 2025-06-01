@@ -1,16 +1,14 @@
 local action = {};
 
-LuaTrajectoryBuilder.line = LuaTrajectoryBuilder.lineToX;
-
 addOpmode({
 	name = "testOpmode",
 	init = function ()
 		action = trajectoryAction(0, 0, 0)
-			:line(20)
-			:line(0)
-			:line(1)
-			:line(2)
-			:line(3)
+			:lineToX(20)
+			:lineToX(0)
+			:lineToX(1)
+			:lineToX(2)
+			:lineToX(3)
 			:build();
 	end,
 	start = function ()
