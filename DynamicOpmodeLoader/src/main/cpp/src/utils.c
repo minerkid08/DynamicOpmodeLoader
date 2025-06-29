@@ -3,10 +3,11 @@
 #include "jni.h"
 #include <malloc.h>
 
-jobject obj;
-jmethodID printId;
-jmethodID errId;
-char* buf;
+static jobject obj;
+static jmethodID printId;
+static jmethodID errId;
+static jmethodID getClassId;
+static char* buf;
 
 void print(const char* fmt, ...)
 {
@@ -35,19 +36,15 @@ void initUtils(jobject object)
 		jclass class = (*global.env)->GetObjectClass(global.env, object);
 		printId = (*global.env)->GetMethodID(global.env, class, "print", "(Ljava/lang/String;)V");
 		errId = (*global.env)->GetMethodID(global.env, class, "err", "(Ljava/lang/String;)V");
+		jclass c = (*global.env)->GetObjectClass(global.env, class);
+		getClassId = (*global.env)->GetMethodID(global.env, c, "getSimpleName", "()Ljava/lang/String;");
 		buf = malloc(256);
 	}
 	obj = (*global.env)->NewGlobalRef(global.env, object);
 }
 
-static jmethodID getClassFun = 0;
 
 jstring getClassName(jclass class)
 {
-	if (!getClassFun)
-	{
-		jclass c = (*global.env)->GetObjectClass(global.env, class);
-		getClassFun = (*global.env)->GetMethodID(global.env, c, "getSimpleName", "()Ljava/lang/String;");
-	}
-	return (*global.env)->CallObjectMethod(global.env, class, getClassFun);
+	return (*global.env)->CallObjectMethod(global.env, class, getClassId);
 }

@@ -1,33 +1,23 @@
 package com.minerkid08.dynamicopmodeloader
 
 import org.junit.Test
-import java.lang.Thread.sleep
 
 class Action;
 
-class LuaTrajectoryBuilder()
+class LuaTrajectoryBuilder
 {
 	companion object
 	{
 		fun init(builder: FunctionBuilder)
 		{
 			builder.addClassFunction(
-				LuaTrajectoryBuilder::class.java,
-				"setTangent",
-				LuaType.Builder,
-				listOf(LuaType.Double)
+				LuaTrajectoryBuilder::class.java, "setTangent", LuaType.Builder, listOf(LuaType.Double)
 			);
 			builder.addClassFunction(
-				LuaTrajectoryBuilder::class.java,
-				"lineToX",
-				LuaType.Builder,
-				listOf(LuaType.Double)
+				LuaTrajectoryBuilder::class.java, "lineToX", LuaType.Builder, listOf(LuaType.Double)
 			);
 			builder.addClassFunction(
-				LuaTrajectoryBuilder::class.java,
-				"lineToY",
-				LuaType.Builder,
-				listOf(LuaType.Double)
+				LuaTrajectoryBuilder::class.java, "lineToY", LuaType.Builder, listOf(LuaType.Double)
 			);
 			builder.addClassFunction(
 				LuaTrajectoryBuilder::class.java,
@@ -43,9 +33,7 @@ class LuaTrajectoryBuilder()
 			);
 
 			builder.addClassFunction(
-				LuaTrajectoryBuilder::class.java,
-				"build",
-				LuaType.Object(Action::class.java)
+				LuaTrajectoryBuilder::class.java, "build", LuaType.Object(Action::class.java)
 			);
 		}
 	}
@@ -118,34 +106,26 @@ class Main
 	@Test
 	fun main()
 	{
-		doThing();
-		//FileServer.start();
-		//while(true)
-		//{
-		//	sleep(1000);
-		//}
+		System.loadLibrary("dynamicopmodeloader");
+		val opmodeLoader = OpmodeLoader();
+
+		val builder = opmodeLoader.getFunctionBuilder();
+
+		LuaTrajectoryBuilder.init(builder);
+		LuaAction.init(builder);
+
+		val opmodes = opmodeLoader.init()?:return;
+
+		for(opmode in opmodes)
+		{
+			println("found opmode: $opmode");
+		}
+
+		opmodeLoader.loadOpmode(opmodes[0]);
+
+		opmodeLoader.start();
+
+		opmodeLoader.callFun("dothing4", 69, 420.0);
+		opmodeLoader.callOpmodeFun("dothing", "what", 69, 420.0);
 	}
-}
-fun doThing()
-{
-	val opmodeLoader = OpmodeLoader();
-	
-	val builder = opmodeLoader.getFunctionBuilder();
-	
-	LuaTrajectoryBuilder.init(builder);
-	LuaAction.init(builder);
-	
-	val opmodes = opmodeLoader.init() ?: return;
-	
-	for(opmode in opmodes)
-	{
-		println("found opmode: $opmode");
-	}
-	
-	opmodeLoader.loadOpmode(opmodes[0]);
-	
-	opmodeLoader.start();
-	
-	opmodeLoader.callFun("dothing4", 69, 420.0);
-	opmodeLoader.callOpmodeFun("dothing", "what", 69, 420.0);
 }

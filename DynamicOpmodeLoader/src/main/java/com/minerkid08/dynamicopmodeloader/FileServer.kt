@@ -1,44 +1,45 @@
 package com.minerkid08.dynamicopmodeloader
 
-import org.apache.ftpserver.FtpServer
-import org.apache.ftpserver.FtpServerFactory
-import org.apache.ftpserver.ftplet.User
-import org.apache.ftpserver.listener.ListenerFactory
-import org.apache.ftpserver.usermanager.PropertiesUserManagerFactory
-import org.apache.ftpserver.usermanager.UserFactory
-import org.apache.ftpserver.usermanager.impl.WritePermission
+import java.io.File
+import java.io.FileOutputStream
+import java.net.ServerSocket
 
 class FileServer
 {
 	companion object
 	{
-		fun start(user: User? = null)
+		fun start()
 		{
-			val serverFactory = FtpServerFactory();
-			val listenerFactory = ListenerFactory();
-			listenerFactory.port = 2121;
-			serverFactory.addListener("default", listenerFactory.createListener());
-			val userManagerFactory = PropertiesUserManagerFactory();
-			val userManager = userManagerFactory.createUserManager();
-			val user2 = if(user == null)
-			{
-				val user3 = UserFactory();
-				user3.name = "user";
-				user3.password = "user";
-				user3.homeDirectory = "/sdcard/lua";
-				user3.authorities = listOf(WritePermission());
-				user3.createUser();
-			}
-			else user;
-			userManager.save(user2);
-			serverFactory.userManager = userManager;
-			val ftpServer: FtpServer = serverFactory.createServer();
-			
-			val lib = LuaStdlib();
-			
-			lib.print("FTP server starting");
-			ftpServer.start();
-			lib.print("FTP server started on port 2121");
+			System.loadLibrary("dynamicopmodeloader");
+			FileServer().startUnzipServer();
 		}
 	}
+
+	fun startUnzipServer()
+	{
+		val stdlib = LuaStdlib();
+		val thread = Thread({
+			val serverSocket = ServerSocket(6969);
+			while(true)
+			{
+				val socket = serverSocket.accept();
+				val stream = socket.getInputStream();
+				var bytes = 512;
+				val file = File("/sdcard/data.pak");
+				val outputStream = FileOutputStream(file);
+				val arr = ByteArray(512);
+				while(bytes == 512)
+				{
+					bytes = stream.read(arr, 0, 512);
+					outputStream.write(arr, 0, bytes);
+				}
+				outputStream.close();
+				unzip(stdlib, "/sdcard");
+				socket.close();
+			}
+		});
+		thread.start();
+	}
+
+	private external fun unzip(stdlib: LuaStdlib, path: String);
 }

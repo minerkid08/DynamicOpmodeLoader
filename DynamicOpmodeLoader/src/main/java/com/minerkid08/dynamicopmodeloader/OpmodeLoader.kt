@@ -6,7 +6,6 @@ class OpmodeLoader()
 	{
 		init
 		{
-			System.loadLibrary("dynamicopmodeloader");
 		}
 	}
 	
@@ -50,11 +49,18 @@ class OpmodeLoader()
 	external fun start(recognition: Int = 0);
 	
 	/**
-	 * calls the update function on the lua opmode with a Time object as the first argument
+	 * calls the update function on the lua opmode with deltaTime as the first argument and elapsedTime as the second
 	 */
 	external fun update(deltaTime: Double, elapsedTime: Double);
 	
+	/**
+	 * calls a global function with args as the arguments
+	 */
 	external fun callFun(name: String, vararg args: Any);
+	
+	/**
+	 * calls a function in the opmode table with args as the arguments
+	 */
 	external fun callOpmodeFun(name: String, vararg args: Any);
 	
 	private external fun internalInit2(luaStdlib: LuaStdlib);
