@@ -6,3 +6,4 @@ void err(const char* fmt, ...);
 void initUtils(jobject object);
 
 jstring getClassName(jclass class);
+char strStartsWith(const char* a, const char* b);

@@ -1,10 +1,12 @@
 #include "functionBuilder.h"
+#include "callback.h"
 #include "dynList.h"
 #include "function.h"
 #include "global.h"
 #include "jni.h"
 #include "lua/lauxlib.h"
 #include "lua/lua.h"
+#include "type.h"
 #include "utils.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,9 +16,6 @@
 #define createClass Java_com_minerkid08_dynamicopmodeloader_FunctionBuilder_createClass
 #define addFun Java_com_minerkid08_dynamicopmodeloader_FunctionBuilder_addFunction
 #define addFunc Java_com_minerkid08_dynamicopmodeloader_FunctionBuilder_addFunctionc
-
-#define TFLOAT 6
-#define TINT 7
 
 int callFunc(lua_State* l);
 int callFunc2(lua_State* l);
@@ -171,20 +170,17 @@ jvalue* checkArgs(lua_State* l, Function* fun, int s)
 			}
 			else if (type != fun->argTypes[i])
 			{
-				if (type != LUA_TTABLE || fun->argTypes[i] != LUA_TSTRING)
-				{
-					const char* msg;
-					const char* typearg;
-					if (luaL_getmetafield(l, i + 2 + s, "__name") == LUA_TSTRING)
-						typearg = lua_tostring(l, -1);
-					else if (lua_type(l, i + 2 + s) == LUA_TLIGHTUSERDATA)
-						typearg = "light userdata";
-					else
-						typearg = luaL_typename(l, i + 2 + s);
-					msg = lua_pushfstring(l, "%s expected, got %s", lua_typename(l, fun->argTypes[i]), typearg);
-					luaL_argerror(l, i + 1, msg);
-					return 0;
-				}
+				const char* msg;
+				const char* typearg;
+				if (luaL_getmetafield(l, i + 2 + s, "__name") == LUA_TSTRING)
+					typearg = lua_tostring(l, -1);
+				else if (lua_type(l, i + 2 + s) == LUA_TLIGHTUSERDATA)
+					typearg = "light userdata";
+				else
+					typearg = luaL_typename(l, i + 2 + s);
+				msg = lua_pushfstring(l, "%s expected, got %s", lua_typename(l, fun->argTypes[i]), typearg);
+				luaL_argerror(l, i + 1, msg);
+				return 0;
 			}
 			switch (type)
 			{
@@ -208,6 +204,10 @@ jvalue* checkArgs(lua_State* l, Function* fun, int s)
 				lua_getfield(l, i + 2 + s, "ref");
 				args[i].l = lua_touserdata(l, -1);
 				lua_pop(l, 1);
+				break;
+			case LUA_TFUNCTION:
+				args[i].l = makeCallback(i + 2 + s);
+				break;
 			}
 		}
 	}
@@ -223,11 +223,7 @@ int call(lua_State* l, Function* fun, jobject obj, jvalue* args)
 		free(args);
 		return 0;
 	}
-#ifdef __linux
-	case -1: {
-#else
-	case 255: {
-#endif
+	case TBUILDER: {
 		function_callVX(fun, obj, args);
 		free(args);
 		lua_pushvalue(l, 2);

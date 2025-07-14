@@ -48,3 +48,17 @@ jstring getClassName(jclass class)
 {
 	return (*env)->CallObjectMethod(env, class, getClassId);
 }
+
+char strStartsWith(const char* a, const char* b)
+{
+  int i = 0;
+  char ca = b[i];
+  while(ca != 0)
+  {
+    if(ca != a[i])
+      return 0;
+    i++;
+    ca = b[i];
+  }
+  return 1;
+}

@@ -217,6 +217,6 @@ class LuaTrajectoryBuilder
 	fun build(): Action
 	{
 		println("build");
-		return Action();
+		return NullAction();
 	}
 }

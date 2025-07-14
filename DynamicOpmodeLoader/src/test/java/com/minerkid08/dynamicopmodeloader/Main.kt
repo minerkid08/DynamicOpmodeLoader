@@ -1,9 +1,6 @@
 package com.minerkid08.dynamicopmodeloader
 
 import org.junit.Test
-import java.lang.Thread.sleep
-
-class Action;
 
 fun printf(fmt: String, vararg args: Any?)
 {
@@ -12,9 +9,11 @@ fun printf(fmt: String, vararg args: Any?)
 
 class E
 {
-    fun doThing(i: Int, f: Float)
+    fun doThing(callback: LuaCallback)
     {
-        println("i $i, f $f");
+        println("did thing");
+        callback.call(69);
+        println("called callback");
     }
 }
 
@@ -24,15 +23,10 @@ fun run()
 
     val builder = opmodeLoader.getFunctionBuilder();
 
-    println(opmodeLoader);
-
-    LuaAction.init(builder);
-    LuaRobotActions.init(builder);
-
     val e = E();
 
     builder.setCurrentObject(e);
-    builder.addObjectFunction("doThing", LuaType.Void, listOf(LuaType.Int, LuaType.Float));
+    builder.addObjectFunction("doThing", LuaType.Void, listOf(LuaType.Callback));
 
     val opmodes = opmodeLoader.init() ?: return;
 
@@ -54,8 +48,17 @@ class Main
     fun main()
     {
         System.loadLibrary("dynamicopmodeloader");
-        for (i in 1..20)
-            run();
+        //for (i in 1..20)
+        //run();
+        val action = ParallelAction(
+            SleepAction(0.5),
+            SleepAction(0.5),
+            SleepAction(0.5),
+            SleepAction(0.5),
+            SleepAction(0.5)
+        )
+        action.start();
+        while(action.update() == ActionState.Running);
     }
 
     @Test

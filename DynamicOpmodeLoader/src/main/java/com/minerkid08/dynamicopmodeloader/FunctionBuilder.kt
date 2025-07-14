@@ -1,5 +1,27 @@
 package com.minerkid08.dynamicopmodeloader
 
+private enum class LuaTypeId(val id: kotlin.Int)
+{
+    None(-1),
+    Nil(0),
+    Bool(1),
+    LightUserData(2),
+    Number(3),
+    String(4),
+    Table(5),
+    Function(6),
+    UserData(7),
+    Thread(8),
+    Float(9),
+    Int(10),
+    Builder(11)
+}
+
+class LuaCallback(private val id: Int)
+{
+    external fun call(vararg args: Any?);
+}
+
 abstract class LuaType(val clazz: Class<*>)
 {
     companion object
@@ -11,6 +33,7 @@ abstract class LuaType(val clazz: Class<*>)
         val Float = FloatT();
         val String = StringT();
         val Builder = BuilderT();
+        val Callback = CallbackT();
     }
 
     class Object(clazz: Class<*>) : LuaType(clazz);
@@ -21,6 +44,7 @@ abstract class LuaType(val clazz: Class<*>)
     class StringT : LuaType(kotlin.String::class.java);
     class VoidT : LuaType(Any::class.java);
     class BuilderT : LuaType(Any::class.java);
+    class CallbackT : LuaType(LuaCallback::class.java);
 }
 
 class FunctionBuilder
@@ -98,14 +122,15 @@ class FunctionBuilder
     {
         return when (type)
         {
-            is LuaType.DoubleT  -> "D";
-            is LuaType.FloatT   -> "F";
-            is LuaType.IntT     -> "I";
-            is LuaType.BoolT    -> "Z";
-            is LuaType.VoidT    -> "V";
-            is LuaType.BuilderT -> "V";
-            is LuaType.StringT  -> "Ljava/lang/String;";
-            else                -> "L${type.clazz.name.replace('.', '/')};";
+            is LuaType.DoubleT   -> "D";
+            is LuaType.FloatT    -> "F";
+            is LuaType.IntT      -> "I";
+            is LuaType.BoolT     -> "Z";
+            is LuaType.VoidT     -> "V";
+            is LuaType.BuilderT  -> "V";
+            is LuaType.StringT   -> "Ljava/lang/String;";
+            is LuaType.CallbackT -> "L${LuaCallback::class.java.name.replace('.', '/')};";
+            else                 -> "L${type.clazz.name.replace('.', '/')};";
         }
     }
 
@@ -113,15 +138,16 @@ class FunctionBuilder
     {
         return when (type)
         {
-            is LuaType.DoubleT  -> 3;
-            is LuaType.FloatT   -> 6;
-            is LuaType.IntT     -> 7;
-            is LuaType.BoolT    -> 1;
-            is LuaType.VoidT    -> 0;
-            is LuaType.StringT  -> 4;
-            is LuaType.Object   -> 5;
-            is LuaType.BuilderT -> -1;
-            else                -> 0;
+            is LuaType.DoubleT   -> LuaTypeId.Number.id;
+            is LuaType.FloatT    -> LuaTypeId.Float.id;
+            is LuaType.IntT      -> LuaTypeId.Int.id;
+            is LuaType.BoolT     -> LuaTypeId.Bool.id;
+            is LuaType.VoidT     -> LuaTypeId.Nil.id;
+            is LuaType.StringT   -> LuaTypeId.String.id;
+            is LuaType.Object    -> LuaTypeId.Table.id;
+            is LuaType.BuilderT  -> LuaTypeId.Builder.id;
+            is LuaType.CallbackT -> LuaTypeId.Function.id;
+            else                 -> LuaTypeId.Nil.id;
         }
     }
 }
