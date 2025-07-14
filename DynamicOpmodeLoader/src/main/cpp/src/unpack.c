@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "utils.h"
 #include "global.h"
+#include "utils.h"
 
 #include <jni.h>
 #include <sys/stat.h>
@@ -37,10 +37,10 @@ int offset = 0;
 
 const char* prefix;
 
-JNIEXPORT void JNICALL unpack(JNIEnv* env, jobject this, jobject stdlib, jstring path)
+JNIEXPORT void JNICALL unpack(JNIEnv* env2, jobject this, jobject stdlib, jstring path)
 {
-    global.env = env;
-    initUtils(stdlib);
+  env = env2;
+	initUtils(stdlib);
 	prefix = (*env)->GetStringUTFChars(env, path, 0);
 	char* filePath = malloc(strlen(prefix) + 10);
 	strcpy(filePath, prefix);
@@ -121,15 +121,13 @@ void writeFile(const FileDirectoryEntry* entry, const char* path, const char* na
 		{
 			str[i + off] = 0;
 			if (stat(str, &st) == -1)
-			    mkdir(str, 0777);
-            print("mkdir '%s'", str);
+				mkdir(str, 0777);
 		}
 		str[i + off] = path[i];
 	}
 	str[len + off] = 0;
 	if (stat(str, &st) == -1)
 		mkdir(str, 0777);
-	print("mkdir '%s'", str);
 	free(str);
 
 	// prefix + / + path + / + name + . + ext + \0

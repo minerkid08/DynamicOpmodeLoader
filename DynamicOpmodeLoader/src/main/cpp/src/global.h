@@ -11,15 +11,10 @@ typedef struct
 	char* name;
 } Opmode;
 
-typedef struct
-{
-	int currentOpmode;
-	lua_State* l;
-	JNIEnv* env;
-	Opmode* opmodes;
-	Function* functions;
-	jobject* objects;
-	jobject currentObject;
-} Global;
-
-extern Global global;
+extern int currentOpmode;
+extern lua_State* l;
+extern JNIEnv* env;
+extern Opmode* opmodes;
+extern Function* functions;
+extern jobject* objects;
+extern jobject currentObject;

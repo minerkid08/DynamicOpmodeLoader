@@ -15,79 +15,86 @@
 #define addFun Java_com_minerkid08_dynamicopmodeloader_FunctionBuilder_addFunction
 #define addFunc Java_com_minerkid08_dynamicopmodeloader_FunctionBuilder_addFunctionc
 
+#define TFLOAT 6
+#define TINT 7
+
 int callFunc(lua_State* l);
 int callFunc2(lua_State* l);
+int objectGC(lua_State* l);
 
 void fbInit()
 {
-	global.objects = dynList_new(0, sizeof(jobject));
-	dynList_reserve((void**)&global.objects, 10);
-
-	global.functions = dynList_new(0, sizeof(Function));
-	dynList_reserve((void**)&global.functions, 20);
+	functions = dynList_new(0, sizeof(Function));
+	dynList_reserve((void**)&functions, 25);
+	objects = dynList_new(0, sizeof(jobject));
+	dynList_reserve((void**)&objects, 5);
 }
 
 void fbInitLua()
 {
-	luaL_newmetatable(global.l, "luaFunc");
-	lua_pushcfunction(global.l, callFunc);
-	lua_setfield(global.l, -2, "__call");
+	luaL_newmetatable(l, "luaFunc");
+	lua_pushcfunction(l, callFunc);
+	lua_setfield(l, -2, "__call");
 
-	luaL_newmetatable(global.l, "luaFunc2");
-	lua_pushcfunction(global.l, callFunc2);
-	lua_setfield(global.l, -2, "__call");
+	luaL_newmetatable(l, "luaFunc2");
+	lua_pushcfunction(l, callFunc2);
+	lua_setfield(l, -2, "__call");
+
+	luaL_newmetatable(l, "jobject");
+	lua_pushcfunction(l, objectGC);
+	lua_setfield(l, -2, "__gc");
 }
 
 void fbReset()
 {
-	int s = dynList_size(global.objects);
+	int s = dynList_size(objects);
 	for (int i = 0; i < s; i++)
-		(*global.env)->DeleteGlobalRef(global.env, global.objects[i]);
-	dynList_resize((void**)&global.objects, 0);
-	dynList_resize((void**)&global.functions, 0);
+		(*env)->DeleteGlobalRef(env, objects[i]);
+	dynList_resize((void**)&objects, 0);
+	dynList_resize((void**)&functions, 0);
 }
 
 JNIEXPORT void JNICALL createClass(JNIEnv* env, jobject this, jstring str)
 {
 	const char* s = (*env)->GetStringUTFChars(env, str, NULL);
-	lua_newtable(global.l);
-	lua_setglobal(global.l, s);
+	lua_newtable(l);
+	lua_setglobal(l, s);
 	(*env)->ReleaseStringUTFChars(env, str, s);
 }
 
-JNIEXPORT void JNICALL addObject(JNIEnv* env, jobject this, jobject object)
+JNIEXPORT void JNICALL addObject(JNIEnv* env2, jobject this, jobject object)
 {
-	global.env = env;
+	env = env2;
 
 	jobject obj = (*env)->NewGlobalRef(env, object);
-	global.currentObject = obj;
+	currentObject = obj;
 
-	int objectId = dynList_size(global.objects);
-	dynList_resize((void**)&global.objects, objectId + 1);
-	*(global.objects + objectId) = obj;
+	int objectId = dynList_size(objects);
+	dynList_resize((void**)&objects, objectId + 1);
+	*(objects + objectId) = obj;
 }
 
-JNIEXPORT void JNICALL addFun(JNIEnv* env, jobject this, jstring name, jstring signature, int rtnType, int argc)
+JNIEXPORT void JNICALL addFun(JNIEnv* env2, jobject this, jstring name, jstring signature, int rtnType, int argc)
 {
+	env = env2;
+
 	const char* name2 = (*env)->GetStringUTFChars(env, name, NULL);
 	const char* signature2 = (*env)->GetStringUTFChars(env, signature, NULL);
 
-	global.env = env;
-
-	unsigned long long functionId = dynList_size(global.functions);
-	dynList_resize((void**)&global.functions, functionId + 1);
-	Function* fun = global.functions + functionId;
+	unsigned long long functionId = dynList_size(functions);
+	dynList_resize((void**)&functions, functionId + 1);
+	Function* fun = functions + functionId;
 
 	fflush(stdout);
 
 	function_init(fun, name2, signature2, rtnType, argc);
 
-	lua_newtable(global.l);
-	lua_pushinteger(global.l, functionId);
-	lua_setfield(global.l, -2, "id");
-	luaL_getmetatable(global.l, "luaFunc");
-	lua_setmetatable(global.l, -2);
-	lua_setglobal(global.l, name2);
+	lua_newtable(l);
+	lua_pushinteger(l, functionId);
+	lua_setfield(l, -2, "id");
+	luaL_getmetatable(l, "luaFunc");
+	lua_setmetatable(l, -2);
+	lua_setglobal(l, name2);
 
 	print("add fun %s with id %d with sig %s", name2, functionId, signature2);
 
@@ -95,41 +102,41 @@ JNIEXPORT void JNICALL addFun(JNIEnv* env, jobject this, jstring name, jstring s
 	(*env)->ReleaseStringUTFChars(env, signature, signature2);
 }
 
-JNIEXPORT void JNICALL addFunc(JNIEnv* env, jobject this, jclass class, jstring name, jstring signature, int rtnType,
+JNIEXPORT void JNICALL addFunc(JNIEnv* env2, jobject this, jclass class, jstring name, jstring signature, int rtnType,
 							   int argc)
 {
+	env = env2;
+
 	const char* name2 = (*env)->GetStringUTFChars(env, name, NULL);
 	const char* signature2 = (*env)->GetStringUTFChars(env, signature, NULL);
 
-	global.env = env;
+	unsigned long long functionId = dynList_size(functions);
+	dynList_resize((void**)&functions, functionId + 1);
+	Function* fun = functions + functionId;
 
-	unsigned long long functionId = dynList_size(global.functions);
-	dynList_resize((void**)&global.functions, functionId + 1);
-	Function* fun = global.functions + functionId;
-
-    char rtnType2 = rtnType;
-    if(rtnType == -1)
-        rtnType2 = -1;
+	char rtnType2 = rtnType;
+	if (rtnType == -1)
+		rtnType2 = -1;
 	function_initX(fun, class, name2, signature2, rtnType2, argc);
 
 	jstring className2 = getClassName(class);
 	const char* className = (*env)->GetStringUTFChars(env, className2, NULL);
 
-	lua_getglobal(global.l, className);
+	lua_getglobal(l, className);
 
-	if (lua_type(global.l, -1) == LUA_TNIL)
+	if (lua_type(l, -1) == LUA_TNIL)
 	{
-		lua_pop(global.l, 1);
-		lua_newtable(global.l);
+		lua_pop(l, 1);
+		lua_newtable(l);
 	}
 
-	lua_newtable(global.l);
-	lua_pushinteger(global.l, functionId);
-	lua_setfield(global.l, -2, "id");
-	luaL_getmetatable(global.l, "luaFunc2");
-	lua_setmetatable(global.l, -2);
-	lua_setfield(global.l, -2, name2);
-	lua_setglobal(global.l, className);
+	lua_newtable(l);
+	lua_pushinteger(l, functionId);
+	lua_setfield(l, -2, "id");
+	luaL_getmetatable(l, "luaFunc2");
+	lua_setmetatable(l, -2);
+	lua_setfield(l, -2, name2);
+	lua_setglobal(l, className);
 
 	print("add class fun %s with id %d with sig %s", name2, functionId, signature2);
 
@@ -154,7 +161,15 @@ jvalue* checkArgs(lua_State* l, Function* fun, int s)
 		for (int i = 0; i < argc; i++)
 		{
 			char type = lua_type(l, i + 2 + s);
-			if (type != fun->argTypes[i])
+			if (type == LUA_TNUMBER)
+			{
+				if (fun->argTypes[i] != LUA_TNUMBER && fun->argTypes[i] != TINT && fun->argTypes[i] != TFLOAT)
+				{
+					luaL_error(l, "expected number but got not number");
+					return 0;
+				}
+			}
+			else if (type != fun->argTypes[i])
 			{
 				if (type != LUA_TTABLE || fun->argTypes[i] != LUA_TSTRING)
 				{
@@ -173,15 +188,21 @@ jvalue* checkArgs(lua_State* l, Function* fun, int s)
 			}
 			switch (type)
 			{
-			case LUA_TNUMBER:
-				args[i].d = lua_tonumber(l, i + 2 + s);
-				break;
+			case LUA_TNUMBER: {
+				if (fun->argTypes[i] == LUA_TNUMBER)
+					args[i].d = lua_tonumber(l, i + 2 + s);
+				if (fun->argTypes[i] == TFLOAT)
+					args[i].f = (float)lua_tonumber(l, i + 2 + s);
+				if (fun->argTypes[i] == TINT)
+					args[i].i = (int)lua_tonumber(l, i + 2 + s);
+			}
+			break;
 			case LUA_TBOOLEAN:
 				args[i].z = lua_toboolean(l, i + 2 + s);
 				break;
 			case LUA_TSTRING:
 				const char* str = lua_tostring(l, i + 2 + s);
-				args[i].l = (*global.env)->NewStringUTF(global.env, str);
+				args[i].l = (*env)->NewStringUTF(env, str);
 				break;
 			case LUA_TTABLE:
 				lua_getfield(l, i + 2 + s, "ref");
@@ -202,7 +223,11 @@ int call(lua_State* l, Function* fun, jobject obj, jvalue* args)
 		free(args);
 		return 0;
 	}
+#ifdef __linux
+	case -1: {
+#else
 	case 255: {
+#endif
 		function_callVX(fun, obj, args);
 		free(args);
 		lua_pushvalue(l, 2);
@@ -210,6 +235,18 @@ int call(lua_State* l, Function* fun, jobject obj, jvalue* args)
 	}
 	case LUA_TNUMBER: {
 		double rtn = function_callDX(fun, obj, args);
+		lua_pushnumber(l, rtn);
+		free(args);
+		return 1;
+	}
+	case TFLOAT: {
+		float rtn = function_callFX(fun, obj, args);
+		lua_pushnumber(l, rtn);
+		free(args);
+		return 1;
+	}
+	case TINT: {
+		int rtn = function_callIX(fun, obj, args);
 		lua_pushnumber(l, rtn);
 		free(args);
 		return 1;
@@ -222,16 +259,16 @@ int call(lua_State* l, Function* fun, jobject obj, jvalue* args)
 	}
 	case LUA_TSTRING: {
 		jstring rtn = function_callX(fun, obj, args);
-		const char* str = (*global.env)->GetStringUTFChars(global.env, rtn, NULL);
+		const char* str = (*env)->GetStringUTFChars(env, rtn, NULL);
 		lua_pushstring(l, str);
-		(*global.env)->ReleaseStringUTFChars(global.env, rtn, str);
+		(*env)->ReleaseStringUTFChars(env, rtn, str);
 		free(args);
 		return 1;
 	}
 	case LUA_TTABLE: {
 		jobject res = function_callX(fun, obj, args);
-		jstring str = getClassName((*global.env)->GetObjectClass(global.env, res));
-		const char* s = (*global.env)->GetStringUTFChars(global.env, str, NULL);
+		jstring str = getClassName((*env)->GetObjectClass(env, res));
+		const char* s = (*env)->GetStringUTFChars(env, str, NULL);
 		free(args);
 
 		lua_getglobal(l, s);
@@ -239,11 +276,11 @@ int call(lua_State* l, Function* fun, jobject obj, jvalue* args)
 		if (lua_type(l, -1) != LUA_TTABLE)
 			luaL_error(l, "attempted to return object of an unknown type \'%s\'", s);
 
-		jobject ref = (*global.env)->NewGlobalRef(global.env, res);
+		jobject ref = (*env)->NewGlobalRef(env, res);
 
-		int objectId = dynList_size(global.objects);
-		dynList_resize((void**)&global.objects, objectId + 1);
-		global.objects[objectId] = ref;
+		int objectId = dynList_size(objects);
+		dynList_resize((void**)&objects, objectId + 1);
+		objects[objectId] = ref;
 
 		lua_newtable(l);
 		lua_pushnil(l);
@@ -255,6 +292,9 @@ int call(lua_State* l, Function* fun, jobject obj, jvalue* args)
 		}
 		lua_pushlightuserdata(l, ref);
 		lua_setfield(l, -2, "ref");
+
+		luaL_getmetatable(l, "jobject");
+		lua_setmetatable(l, -2);
 		return 1;
 	}
 	}
@@ -266,7 +306,7 @@ int callFunc(lua_State* l)
 	lua_getfield(l, 1, "id");
 	int id = lua_tointeger(l, -1);
 	lua_pop(l, 1);
-	Function* fun = global.functions + id;
+	Function* fun = functions + id;
 
 	jvalue* args = checkArgs(l, fun, 0);
 	return call(l, fun, fun->obj, args);
@@ -278,7 +318,7 @@ int callFunc2(lua_State* l)
 	int id = lua_tointeger(l, -1);
 	lua_pop(l, 1);
 
-	Function* fun = global.functions + id;
+	Function* fun = functions + id;
 
 	jvalue* args = checkArgs(l, fun, 1);
 
@@ -287,11 +327,21 @@ int callFunc2(lua_State* l)
 		luaL_error(l, "attempted to call function on a nil object");
 	jobject ref = lua_touserdata(l, -1);
 	lua_pop(l, 1);
-	if ((*global.env)->IsSameObject(global.env, ref, NULL))
+	if ((*env)->IsSameObject(env, ref, NULL))
 		luaL_error(l, "internal handle to jobject is null");
 
 	int res = call(l, fun, ref, args);
-	if ((*global.env)->ExceptionCheck(global.env))
-		(*global.env)->ExceptionDescribe(global.env);
+	if ((*env)->ExceptionCheck(env))
+		(*env)->ExceptionDescribe(env);
 	return res;
+}
+
+int objectGC(lua_State* l)
+{
+	lua_getfield(l, -1, "ref");
+	if (lua_type(l, -1) != LUA_TLIGHTUSERDATA)
+		luaL_error(l, "attempted to free invalid object");
+	jobject ref = lua_touserdata(l, -1);
+	(*env)->DeleteGlobalRef(env, ref);
+	return 0;
 }

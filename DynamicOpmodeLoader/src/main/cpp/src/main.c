@@ -1,4 +1,5 @@
 #include "functionBuilder.h"
+#include "jni_md.h"
 #include "lua/lauxlib.h"
 #include "lua/lua.h"
 #include "lua/lualib.h"
@@ -14,13 +15,20 @@
 
 #define init Java_com_minerkid08_dynamicopmodeloader_OpmodeLoader_internalInit
 #define init2 Java_com_minerkid08_dynamicopmodeloader_OpmodeLoader_internalInit2
+#define close Java_com_minerkid08_dynamicopmodeloader_OpmodeLoader_close
 #define loadOpmode Java_com_minerkid08_dynamicopmodeloader_OpmodeLoader_loadOpmode
 #define start Java_com_minerkid08_dynamicopmodeloader_OpmodeLoader_start
 #define update Java_com_minerkid08_dynamicopmodeloader_OpmodeLoader_update
 #define callFun Java_com_minerkid08_dynamicopmodeloader_OpmodeLoader_callFun
 #define callOpmodeFun Java_com_minerkid08_dynamicopmodeloader_OpmodeLoader_callOpmodeFun
 
-Global global;
+int currentOpmode;
+lua_State* l;
+JNIEnv* env;
+Opmode* opmodes;
+Function* functions;
+jobject* objects;
+jobject currentObject;
 
 int addOpmode(lua_State* l)
 {
@@ -30,9 +38,9 @@ int addOpmode(lua_State* l)
 	if (lua_type(l, -1) != LUA_TTABLE)
 		luaL_typeerror(l, 1, "table");
 
-	int opmodeId = dynList_size(global.opmodes);
-	dynList_resize((void**)&global.opmodes, opmodeId + 1);
-	Opmode* opmode = global.opmodes + opmodeId;
+	int opmodeId = dynList_size(opmodes);
+	dynList_resize((void**)&opmodes, opmodeId + 1);
+	Opmode* opmode = opmodes + opmodeId;
 	opmode->id = opmodeId;
 
 	lua_getfield(l, -1, "name");
@@ -48,89 +56,91 @@ int addOpmode(lua_State* l)
 	lua_getglobal(l, "data");
 	lua_pushvalue(l, -2);
 	lua_seti(l, -2, opmodeId);
-	// lua_setglobal(l, "data");
+	lua_setglobal(l, "data");
 
 	return 0;
 }
 
-void internalInit()
+JNIEXPORT int JNICALL JNI_OnLoad(JavaVM* vm, void* reserved)
 {
-	global.opmodes = dynList_new(0, sizeof(Opmode));
-	dynList_reserve((void**)&global.opmodes, 5);
+	opmodes = dynList_new(0, sizeof(Opmode));
+	dynList_reserve((void**)&opmodes, 5);
+	
+  fbInit();
+  return JNI_VERSION_20;
 }
 
-int inited = 0;
-
-JNIEXPORT void JNICALL init2(JNIEnv* env, jobject this, jobject stdlib)
+JNIEXPORT void JNICALL close(JNIEnv* env2, jobject this)
 {
-	global.env = env;
+	env = env2;
+	int opmodeLen = dynList_size(opmodes);
+	for (int i = 0; i < opmodeLen; i++)
+	{
+		char* str = opmodes[i].name;
+		free(str);
+	}
+	dynList_resize((void**)&opmodes, 0);
+	fbReset();
+	int status = lua_status(l);
+	if (status != LUA_OK)
+		print("lua not ok");
+	lua_close(l);
+	print("lua_state closed");
+}
+
+char inited = 0;
+JNIEXPORT void JNICALL init2(JNIEnv* env2, jobject this, jobject stdlib)
+{
+	env = env2;
 	initUtils(stdlib);
-	global.opmodes = dynList_new(sizeof(Opmode), 5);
-	dynList_resize((void*)&global.opmodes, 0);
 
-	if (!inited)
-	{
-		fbInit();
-		internalInit();
-		inited = 1;
-	}
-	else
-	{
-		int opmodeLen = dynList_size(global.opmodes);
-		for (int i = 0; i < opmodeLen; i++)
-		{
-			char* str = global.opmodes[i].name;
-			free(str);
-		}
-		dynList_resize((void**)&global.opmodes, 0);
-		fbReset();
-		lua_close(global.l);
-	}
+	print("lua_state initalising");
 
-	global.l = luaL_newstate();
+	l = luaL_newstate();
 
-	luaL_openlibs(global.l);
+	luaL_openlibs(l);
 
 #ifndef ANDROID
-	if (luaL_dostring(global.l, "package.path = \"./lua/?.lua\""))
+	if (luaL_dostring(l, "package.path = \"./lua/?.lua\""))
 #else
-	if (luaL_dostring(global.l, "package.path = \"/sdcard/lua/?.lua\""))
+	if (luaL_dostring(l, "package.path = \"/sdcard/lua/?.lua\""))
 #endif
 	{
-		err("%s", lua_tostring(global.l, -1));
+		err("%s", lua_tostring(l, -1));
 		return;
 	}
-	lua_pushcfunction(global.l, addOpmode);
-	lua_setglobal(global.l, "addOpmode");
+	lua_pushcfunction(l, addOpmode);
+	lua_setglobal(l, "addOpmode");
 
-	lua_newtable(global.l);
-	lua_setglobal(global.l, "data");
+	lua_newtable(l);
+	lua_setglobal(l, "data");
 
 	fbInitLua();
+	print("lua_state initalised");
 }
 
-JNIEXPORT jobjectArray JNICALL init(JNIEnv* env, jobject this)
+JNIEXPORT jobjectArray JNICALL init(JNIEnv* env2, jobject this)
 {
-	global.env = env;
+	env = env2;
 #ifndef ANDROID
-	if (luaL_dofile(global.l, "lua/init.lua"))
+	if (luaL_dofile(l, "lua/init.lua"))
 #else
-	if (luaL_dofile(global.l, "/sdcard/lua/init.lua"))
+	if (luaL_dofile(l, "/sdcard/lua/init.lua"))
 #endif
 	{
-		err("%s", lua_tostring(global.l, -1));
+		err("%s", lua_tostring(l, -1));
 		return NULL;
 	}
-	int opmodeCount = dynList_size(global.opmodes);
+
+	int opmodeCount = dynList_size(opmodes);
 
 	jobjectArray arr = (*env)->NewObjectArray(env, opmodeCount, (*env)->FindClass(env, "java/lang/String"), NULL);
 
 	print("loaded %d opmodes\n", opmodeCount);
-	fflush(stdout);
 
 	for (int i = 0; i < opmodeCount; i++)
 	{
-		Opmode* opmode = global.opmodes + i;
+		Opmode* opmode = opmodes + i;
 		jstring str = (*env)->NewStringUTF(env, opmode->name);
 		(*env)->SetObjectArrayElement(env, arr, i, str);
 		(*env)->DeleteLocalRef(env, str);
@@ -138,73 +148,73 @@ JNIEXPORT jobjectArray JNICALL init(JNIEnv* env, jobject this)
 	return arr;
 }
 
-JNIEXPORT void JNICALL loadOpmode(JNIEnv* env, jobject this, jstring opmodeName)
+JNIEXPORT void JNICALL loadOpmode(JNIEnv* env2, jobject this, jstring opmodeName)
 {
-	global.env = env;
-	global.currentOpmode = -1;
+	env = env2;
+	currentOpmode = -1;
 	const char* name = (*env)->GetStringUTFChars(env, opmodeName, NULL);
-	int opmodeCount = dynList_size(global.opmodes);
+	int opmodeCount = dynList_size(opmodes);
 	for (int i = 0; i < opmodeCount; i++)
 	{
-		Opmode* opmode = global.opmodes + i;
+		Opmode* opmode = opmodes + i;
 		if (strcmp(opmode->name, name) == 0)
 		{
-			global.currentOpmode = i;
+			currentOpmode = i;
 			break;
 		}
 	}
 
-	if (global.currentOpmode == -1)
+	if (currentOpmode == -1)
 	{
 		err("cant find opmode \'%s\'", name);
 		return;
 	}
 
-	lua_settop(global.l, 0);
-	lua_getglobal(global.l, "data");
-	lua_geti(global.l, -1, global.currentOpmode);
-	lua_getfield(global.l, -1, "init");
-	if (lua_type(global.l, -1) == LUA_TFUNCTION)
+	lua_settop(l, 0);
+	lua_getglobal(l, "data");
+	lua_geti(l, -1, currentOpmode);
+	lua_getfield(l, -1, "init");
+	if (lua_type(l, -1) == LUA_TFUNCTION)
 	{
-		if (lua_pcall(global.l, 0, 0, 0))
+		if (lua_pcall(l, 0, 0, 0))
 		{
-			err("%s", lua_tostring(global.l, -1));
+			err("%s", lua_tostring(l, -1));
 			return;
 		}
 	}
-	lua_settop(global.l, 2);
+	lua_settop(l, 2);
 	print("loaded opmode \'%s\'\n", name);
 }
 
-JNIEXPORT void JNICALL start(JNIEnv* env, jobject this, int recognitionId)
+JNIEXPORT void JNICALL start(JNIEnv* env2, jobject this, int recognitionId)
 {
-	global.env = env;
-	lua_getfield(global.l, -1, "start");
-	if (lua_type(global.l, -1) == LUA_TFUNCTION)
+	env = env2;
+	lua_getfield(l, -1, "start");
+	if (lua_type(l, -1) == LUA_TFUNCTION)
 	{
-		lua_pushnumber(global.l, recognitionId);
-		if (lua_pcall(global.l, 1, 0, 0))
+		lua_pushnumber(l, recognitionId);
+		if (lua_pcall(l, 1, 0, 0))
 		{
-			err("%s", lua_tostring(global.l, -1));
+			err("%s", lua_tostring(l, -1));
 		}
 	}
-	lua_settop(global.l, 2);
+	lua_settop(l, 2);
 }
 
-JNIEXPORT void JNICALL update(JNIEnv* env, jobject this, double deltaTime, double elapsedTime)
+JNIEXPORT void JNICALL update(JNIEnv* env2, jobject this, double deltaTime, double elapsedTime)
 {
-	global.env = env;
-	lua_getfield(global.l, -1, "update");
-	if (lua_type(global.l, -1) == LUA_TFUNCTION)
+	env = env2;
+	lua_getfield(l, -1, "update");
+	if (lua_type(l, -1) == LUA_TFUNCTION)
 	{
-		lua_pushnumber(global.l, deltaTime);
-		lua_pushnumber(global.l, elapsedTime);
-		if (lua_pcall(global.l, 2, 0, 0))
+		lua_pushnumber(l, deltaTime);
+		lua_pushnumber(l, elapsedTime);
+		if (lua_pcall(l, 2, 0, 0))
 		{
-			err("%s", lua_tostring(global.l, -1));
+			err("%s", lua_tostring(l, -1));
 		}
 	}
-	lua_settop(global.l, 2);
+	lua_settop(l, 2);
 }
 
 static jmethodID getBool = 0L;
@@ -225,62 +235,62 @@ void pushArgs(JNIEnv* env, jobjectArray args, int len)
 			if (!getBool)
 				getBool = (*env)->GetMethodID(env, class, "booleanValue", "()Z");
 			char value = (*env)->CallBooleanMethod(env, elem, getBool);
-			lua_pushboolean(global.l, value);
+			lua_pushboolean(l, value);
 		}
 		else if (strcmp(name, "Integer") == 0)
 		{
 			if (!getInt)
 				getInt = (*env)->GetMethodID(env, class, "intValue", "()I");
 			int value = (*env)->CallBooleanMethod(env, elem, getInt);
-			lua_pushinteger(global.l, value);
+			lua_pushinteger(l, value);
 		}
 		else if (strcmp(name, "Double") == 0)
 		{
 			if (!getDouble)
 				getDouble = (*env)->GetMethodID(env, class, "doubleValue", "()D");
 			double value = (*env)->CallDoubleMethod(env, elem, getDouble);
-			lua_pushnumber(global.l, value);
+			lua_pushnumber(l, value);
 		}
 		else if (strcmp(name, "String") == 0)
 		{
 			const char* str = (*env)->GetStringUTFChars(env, elem, 0);
-			lua_pushstring(global.l, str);
+			lua_pushstring(l, str);
 			(*env)->ReleaseStringUTFChars(env, elem, str);
 		}
 		(*env)->ReleaseStringUTFChars(env, className, name);
 	}
 }
 
-JNIEXPORT void JNICALL callFun(JNIEnv* env, jobject this, jstring name, jobjectArray args)
+JNIEXPORT void JNICALL callFun(JNIEnv* env2, jobject this, jstring name, jobjectArray args)
 {
-	global.env = env;
+	env = env2;
 	const char* nameStr = (*env)->GetStringUTFChars(env, name, 0);
-	lua_getglobal(global.l, nameStr);
-	if (lua_type(global.l, -1) == LUA_TFUNCTION)
+	lua_getglobal(l, nameStr);
+	if (lua_type(l, -1) == LUA_TFUNCTION)
 	{
 		int len = (*env)->GetArrayLength(env, args);
 		pushArgs(env, args, len);
-		if (lua_pcall(global.l, len, 0, 0))
-			err("%s", lua_tostring(global.l, -1));
+		if (lua_pcall(l, len, 0, 0))
+			err("%s", lua_tostring(l, -1));
 	}
 	else
 		err("undefined function: \'%s\'", nameStr);
-	lua_settop(global.l, 2);
+	lua_settop(l, 2);
 }
 
-JNIEXPORT void JNICALL callOpmodeFun(JNIEnv* env, jobject this, jstring name, jobjectArray args)
+JNIEXPORT void JNICALL callOpmodeFun(JNIEnv* env2, jobject this, jstring name, jobjectArray args)
 {
-	global.env = env;
+	env = env2;
 	const char* nameStr = (*env)->GetStringUTFChars(env, name, 0);
-	lua_getfield(global.l, -1, nameStr);
-	if (lua_type(global.l, -1) == LUA_TFUNCTION)
+	lua_getfield(l, -1, nameStr);
+	if (lua_type(l, -1) == LUA_TFUNCTION)
 	{
 		int len = (*env)->GetArrayLength(env, args);
 		pushArgs(env, args, len);
-		if (lua_pcall(global.l, len, 0, 0))
-			err("%s", lua_tostring(global.l, -1));
+		if (lua_pcall(l, len, 0, 0))
+			err("%s", lua_tostring(l, -1));
 	}
 	else
 		err("undefined opmode function: \'%s\'", nameStr);
-	lua_settop(global.l, 2);
+	lua_settop(l, 2);
 }

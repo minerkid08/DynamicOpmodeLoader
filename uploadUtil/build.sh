@@ -1,3 +1,3 @@
 #!/bin/bash
 
-gcc -g src/*.c -o bin/pack
+gcc src/*.c -o bin/pack
