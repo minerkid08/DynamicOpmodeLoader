@@ -2,20 +2,24 @@
 #include "global.h"
 #include "jni.h"
 #include "lua/lua.h"
+#include "utils.h"
 #include <stdlib.h>
 #include <string.h>
 
+#define TFLOAT 6
+#define TINT 7
+
 void function_initX(Function* this, jclass class, const char* name, const char* sig, char rtnType, char argc)
 {
-	this->funId = (*global.env)->GetMethodID(global.env, class, name, sig);
+	this->funId = (*env)->GetMethodID(env, class, name, sig);
 
-	if ((*global.env)->ExceptionCheck(global.env))
+	if ((*env)->ExceptionCheck(env))
 	{
-		(*global.env)->ExceptionDescribe(global.env);
-		exit(1);
+		(*env)->ExceptionDescribe(env);
+		err("can't find function with signature '%s'", sig);
 	}
 
-	this->obj = global.currentObject;
+	this->obj = currentObject;
 	this->argc = argc;
 	this->rtnType = rtnType;
 	this->argTypes = malloc(argc);
@@ -35,6 +39,10 @@ void function_initX(Function* this, jclass class, const char* name, const char* 
 		}
 		if (c == 'D')
 			this->argTypes[currentArg++] = LUA_TNUMBER;
+		if (c == 'I')
+			this->argTypes[currentArg++] = TINT;
+		if (c == 'F')
+			this->argTypes[currentArg++] = TFLOAT;
 		if (currentArg == argc)
 			break;
 	}
@@ -42,43 +50,53 @@ void function_initX(Function* this, jclass class, const char* name, const char* 
 
 void function_init(Function* this, const char* name, const char* sig, char rtnType, char argc)
 {
-	jclass class = (*global.env)->GetObjectClass(global.env, global.currentObject);
+	jclass class = (*env)->GetObjectClass(env, currentObject);
 	function_initX(this, class, name, sig, rtnType, argc);
 }
 
 void function_callV(Function* this, jvalue* args)
 {
-	(*global.env)->CallVoidMethodA(global.env, this->obj, this->funId, args);
+	(*env)->CallVoidMethodA(env, this->obj, this->funId, args);
 }
 double function_callD(Function* this, jvalue* args)
 {
-	return (*global.env)->CallDoubleMethodA(global.env, this->obj, this->funId, args);
+	return (*env)->CallDoubleMethodA(env, this->obj, this->funId, args);
 }
 char function_callB(Function* this, jvalue* args)
 {
-	return (*global.env)->CallBooleanMethodA(global.env, this->obj, this->funId, args);
+	return (*env)->CallBooleanMethodA(env, this->obj, this->funId, args);
 }
 jobject function_call(Function* this, jvalue* args)
 {
-	return (*global.env)->CallObjectMethodA(global.env, this->obj, this->funId, args);
+	return (*env)->CallObjectMethodA(env, this->obj, this->funId, args);
 }
 
 void function_callVX(Function* this, jobject object, jvalue* args)
 {
-	(*global.env)->CallVoidMethodA(global.env, object, this->funId, args);
+	(*env)->CallVoidMethodA(env, object, this->funId, args);
 }
 
 double function_callDX(Function* this, jobject object, jvalue* args)
 {
-	return (*global.env)->CallDoubleMethodA(global.env, object, this->funId, args);
+	return (*env)->CallDoubleMethodA(env, object, this->funId, args);
+}
+
+float function_callFX(Function* this, jobject object, jvalue* args)
+{
+	return (*env)->CallFloatMethodA(env, object, this->funId, args);
+}
+
+int function_callIX(Function* this, jobject object, jvalue* args)
+{
+	return (*env)->CallIntMethodA(env, object, this->funId, args);
 }
 
 char function_callBX(Function* this, jobject object, jvalue* args)
 {
-	return (*global.env)->CallBooleanMethodA(global.env, object, this->funId, args);
+	return (*env)->CallBooleanMethodA(env, object, this->funId, args);
 }
 
 jobject function_callX(Function* this, jobject object, jvalue* args)
 {
-	return (*global.env)->CallObjectMethodA(global.env, object, this->funId, args);
+	return (*env)->CallObjectMethodA(env, object, this->funId, args);
 }

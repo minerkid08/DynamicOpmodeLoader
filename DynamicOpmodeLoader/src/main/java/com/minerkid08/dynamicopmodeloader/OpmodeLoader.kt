@@ -37,7 +37,12 @@ class OpmodeLoader()
 	{
 		return internalInit();
 	}
-	
+
+	/**
+	 * closes the lua instance and cleans up all refrences to jobjects
+	 */
+	external fun close();
+
 	/**
 	 * loads an opmode to be run
 	 */

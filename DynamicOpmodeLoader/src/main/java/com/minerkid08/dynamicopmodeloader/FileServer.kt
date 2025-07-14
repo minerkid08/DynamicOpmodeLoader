@@ -3,6 +3,7 @@ package com.minerkid08.dynamicopmodeloader
 import java.io.File
 import java.io.FileOutputStream
 import java.net.ServerSocket
+import kotlin.math.min
 
 class FileServer
 {
@@ -22,19 +23,27 @@ class FileServer
 			val serverSocket = ServerSocket(6969);
 			while(true)
 			{
+				val path = ".";
 				val socket = serverSocket.accept();
 				val stream = socket.getInputStream();
-				var bytes = 512;
-				val file = File("/sdcard/data.pak");
+
+				val lenBytes= ByteArray(8);
+				stream.read(lenBytes, 0, 8);
+				val len: ULong = lenBytes.foldIndexed(0uL) { index, acc, byte -> acc + (byte.toULong() shl index * 8)};
+
+				var bytes = 0;
+				var bytesRead = 0uL;
+				val file = File("$path/data.pak");
 				val outputStream = FileOutputStream(file);
 				val arr = ByteArray(512);
-				while(bytes == 512)
+				while(bytesRead < len)
 				{
-					bytes = stream.read(arr, 0, 512);
+					bytes = stream.read(arr, 0, min(512, (len - bytesRead).toInt()));
 					outputStream.write(arr, 0, bytes);
+					bytesRead += bytes.toULong();
 				}
 				outputStream.close();
-				unzip(stdlib, "/sdcard");
+				unzip(stdlib, path);
 				socket.close();
 			}
 		});
