@@ -19,8 +19,10 @@ class FileServer
 	fun startUnzipServer()
 	{
 		val stdlib = LuaStdlib();
+		stdlib.print("server starting");
 		val thread = Thread({
 			val serverSocket = ServerSocket(6969);
+			stdlib.print("server started");
 			while(true)
 			{
 				val path = ".";

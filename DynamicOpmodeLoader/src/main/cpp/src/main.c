@@ -1,6 +1,5 @@
 #include "callback.h"
 #include "functionBuilder.h"
-#include "jni_md.h"
 #include "lua/lauxlib.h"
 #include "lua/lua.h"
 #include "lua/lualib.h"
@@ -24,7 +23,7 @@
 #define callOpmodeFun Java_com_minerkid08_dynamicopmodeloader_OpmodeLoader_callOpmodeFun
 
 int currentOpmode;
-lua_State* l;
+lua_State* l = 0;
 JNIEnv* env;
 Opmode* opmodes;
 Function* functions;
@@ -68,7 +67,7 @@ JNIEXPORT int JNICALL JNI_OnLoad(JavaVM* vm, void* reserved)
 	dynList_reserve((void**)&opmodes, 5);
 	
   fbInit();
-  return JNI_VERSION_20;
+  return 0x000a0000; //JNI_VERSION_10;
 }
 
 JNIEXPORT void JNICALL close(JNIEnv* env2, jobject this)
@@ -81,12 +80,13 @@ JNIEXPORT void JNICALL close(JNIEnv* env2, jobject this)
 		free(str);
 	}
 	dynList_resize((void**)&opmodes, 0);
-	fbReset();
 	int status = lua_status(l);
 	if (status != LUA_OK)
 		print("lua not ok");
 	lua_close(l);
+    l = 0;
 	print("lua_state closed");
+	fbReset();
 }
 
 char inited = 0;
@@ -95,6 +95,9 @@ JNIEXPORT void JNICALL init2(JNIEnv* env2, jobject this, jobject stdlib)
 	env = env2;
 	initUtils(stdlib);
   initCallback();
+
+  if(l != 0)
+      close(env2, this);
 
 	print("lua_state initalising");
 

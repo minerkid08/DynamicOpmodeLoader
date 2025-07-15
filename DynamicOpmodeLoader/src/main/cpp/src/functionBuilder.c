@@ -48,7 +48,10 @@ void fbReset()
 {
 	int s = dynList_size(objects);
 	for (int i = 0; i < s; i++)
-		(*env)->DeleteGlobalRef(env, objects[i]);
+    {
+        if(objects[i] != 0)
+           (*env)->DeleteGlobalRef(env, objects[i]);
+    }
 	dynList_resize((void**)&objects, 0);
 	dynList_resize((void**)&functions, 0);
 }
@@ -339,5 +342,11 @@ int objectGC(lua_State* l)
 		luaL_error(l, "attempted to free invalid object");
 	jobject ref = lua_touserdata(l, -1);
 	(*env)->DeleteGlobalRef(env, ref);
+    int len = dynList_size(objects);
+    for(int i = 0; i < len; i++)
+    {
+        if(ref == objects[i])
+            objects[i] = 0;
+    }
 	return 0;
 }

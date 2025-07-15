@@ -3,7 +3,7 @@
 #include "jni.h"
 #include <malloc.h>
 
-static jobject obj;
+static jobject obj = 0;
 static jmethodID printId;
 static jmethodID errId;
 static jmethodID getClassId;
@@ -29,9 +29,7 @@ void err(const char* fmt, ...)
 
 void initUtils(jobject object)
 {
-	if (obj)
-		(*env)->DeleteGlobalRef(env, obj);
-	else
+	if (obj == 0)
 	{
 		jclass class = (*env)->GetObjectClass(env, object);
 		printId = (*env)->GetMethodID(env, class, "print", "(Ljava/lang/String;)V");
@@ -39,8 +37,8 @@ void initUtils(jobject object)
 		jclass c = (*env)->GetObjectClass(env, class);
 		getClassId = (*env)->GetMethodID(env, c, "getSimpleName", "()Ljava/lang/String;");
 		buf = malloc(256);
+        obj = (*env)->NewGlobalRef(env, object);
 	}
-	obj = (*env)->NewGlobalRef(env, object);
 }
 
 

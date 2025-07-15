@@ -37,12 +37,14 @@ add_library(
         include/lua/lutf8lib.c
         include/lua/lvm.c
         include/lua/lzio.c
+        src/callback.c
         src/dynList.c
         src/function.c
         src/functionBuilder.c
         src/main.c
         src/utils.c
         src/unpack.c
+        src/vararg.c
 )
 
 target_include_directories(dynamicopmodeloader PRIVATE ./ ./include)

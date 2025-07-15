@@ -1,7 +1,6 @@
 #include "callback.h"
 #include "global.h"
 #include "jni.h"
-#include "jni_md.h"
 #include "lua/lua.h"
 #include "utils.h"
 #include "vararg.h"
