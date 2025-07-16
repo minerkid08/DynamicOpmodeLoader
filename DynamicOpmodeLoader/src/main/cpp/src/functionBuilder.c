@@ -1,10 +1,12 @@
 #include "functionBuilder.h"
+#include "callback.h"
 #include "dynList.h"
 #include "function.h"
 #include "global.h"
 #include "jni.h"
 #include "lua/lauxlib.h"
 #include "lua/lua.h"
+#include "type.h"
 #include "utils.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,9 +16,6 @@
 #define createClass Java_com_minerkid08_dynamicopmodeloader_FunctionBuilder_createClass
 #define addFun Java_com_minerkid08_dynamicopmodeloader_FunctionBuilder_addFunction
 #define addFunc Java_com_minerkid08_dynamicopmodeloader_FunctionBuilder_addFunctionc
-
-#define TFLOAT 6
-#define TINT 7
 
 int callFunc(lua_State* l);
 int callFunc2(lua_State* l);
@@ -49,7 +48,10 @@ void fbReset()
 {
 	int s = dynList_size(objects);
 	for (int i = 0; i < s; i++)
-		(*env)->DeleteGlobalRef(env, objects[i]);
+	{
+		if (objects[i] != 0)
+			(*env)->DeleteGlobalRef(env, objects[i]);
+	}
 	dynList_resize((void**)&objects, 0);
 	dynList_resize((void**)&functions, 0);
 }
@@ -161,30 +163,23 @@ jvalue* checkArgs(lua_State* l, Function* fun, int s)
 		for (int i = 0; i < argc; i++)
 		{
 			char type = lua_type(l, i + 2 + s);
-			if (type == LUA_TNUMBER)
+			char type2 = fun->argTypes[i];
+			if (type2 == TINT || type2 == TFLOAT)
+				type2 = LUA_TNUMBER;
+
+			if (type != type2)
 			{
-				if (fun->argTypes[i] != LUA_TNUMBER && fun->argTypes[i] != TINT && fun->argTypes[i] != TFLOAT)
-				{
-					luaL_error(l, "expected number but got not number");
-					return 0;
-				}
-			}
-			else if (type != fun->argTypes[i])
-			{
-				if (type != LUA_TTABLE || fun->argTypes[i] != LUA_TSTRING)
-				{
-					const char* msg;
-					const char* typearg;
-					if (luaL_getmetafield(l, i + 2 + s, "__name") == LUA_TSTRING)
-						typearg = lua_tostring(l, -1);
-					else if (lua_type(l, i + 2 + s) == LUA_TLIGHTUSERDATA)
-						typearg = "light userdata";
-					else
-						typearg = luaL_typename(l, i + 2 + s);
-					msg = lua_pushfstring(l, "%s expected, got %s", lua_typename(l, fun->argTypes[i]), typearg);
-					luaL_argerror(l, i + 1, msg);
-					return 0;
-				}
+				const char* msg;
+				const char* typearg;
+				if (luaL_getmetafield(l, i + 2 + s, "__name") == LUA_TSTRING)
+					typearg = lua_tostring(l, -1);
+				else if (lua_type(l, i + 2 + s) == LUA_TLIGHTUSERDATA)
+					typearg = "light userdata";
+				else
+					typearg = luaL_typename(l, i + 2 + s);
+				msg = lua_pushfstring(l, "%s expected, got %s", lua_typename(l, type2), typearg);
+				luaL_argerror(l, i + 1, msg);
+				return 0;
 			}
 			switch (type)
 			{
@@ -208,6 +203,10 @@ jvalue* checkArgs(lua_State* l, Function* fun, int s)
 				lua_getfield(l, i + 2 + s, "ref");
 				args[i].l = lua_touserdata(l, -1);
 				lua_pop(l, 1);
+				break;
+			case LUA_TFUNCTION:
+				args[i].l = makeCallback(i + 2 + s);
+				break;
 			}
 		}
 	}
@@ -223,11 +222,7 @@ int call(lua_State* l, Function* fun, jobject obj, jvalue* args)
 		free(args);
 		return 0;
 	}
-#ifdef __linux
-	case -1: {
-#else
-	case 255: {
-#endif
+	case TBUILDER: {
 		function_callVX(fun, obj, args);
 		free(args);
 		lua_pushvalue(l, 2);
@@ -277,10 +272,6 @@ int call(lua_State* l, Function* fun, jobject obj, jvalue* args)
 			luaL_error(l, "attempted to return object of an unknown type \'%s\'", s);
 
 		jobject ref = (*env)->NewGlobalRef(env, res);
-
-		int objectId = dynList_size(objects);
-		dynList_resize((void**)&objects, objectId + 1);
-		objects[objectId] = ref;
 
 		lua_newtable(l);
 		lua_pushnil(l);
@@ -343,5 +334,11 @@ int objectGC(lua_State* l)
 		luaL_error(l, "attempted to free invalid object");
 	jobject ref = lua_touserdata(l, -1);
 	(*env)->DeleteGlobalRef(env, ref);
+	int len = dynList_size(objects);
+	for (int i = 0; i < len; i++)
+	{
+		if (ref == objects[i])
+			objects[i] = 0;
+	}
 	return 0;
 }

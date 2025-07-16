@@ -2,12 +2,10 @@
 #include "global.h"
 #include "jni.h"
 #include "lua/lua.h"
+#include "type.h"
 #include "utils.h"
 #include <stdlib.h>
 #include <string.h>
-
-#define TFLOAT 6
-#define TINT 7
 
 void function_initX(Function* this, jclass class, const char* name, const char* sig, char rtnType, char argc)
 {
@@ -16,7 +14,7 @@ void function_initX(Function* this, jclass class, const char* name, const char* 
 	if ((*env)->ExceptionCheck(env))
 	{
 		(*env)->ExceptionDescribe(env);
-		err("can't find function with signature '%s'", sig);
+		fbErr("can't find function with signature '%s'", sig);
 	}
 
 	this->obj = currentObject;
@@ -33,7 +31,12 @@ void function_initX(Function* this, jclass class, const char* name, const char* 
 			this->argTypes[currentArg++] = LUA_TBOOLEAN;
 		if (c == 'L')
 		{
-			this->argTypes[currentArg++] = LUA_TSTRING;
+			if (strStartsWith(sig + i + 1, "java/lang/String"))
+				this->argTypes[currentArg++] = LUA_TSTRING;
+			else if (strStartsWith(sig + i + 1, "com/minerkid08/dynamicopmodeloader/LuaCallback"))
+				this->argTypes[currentArg++] = LUA_TFUNCTION;
+			else
+				this->argTypes[currentArg++] = LUA_TTABLE;
 			while (sig[++i] == ';')
 				;
 		}

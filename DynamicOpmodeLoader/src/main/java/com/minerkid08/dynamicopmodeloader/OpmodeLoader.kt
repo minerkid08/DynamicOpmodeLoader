@@ -4,11 +4,17 @@ class OpmodeLoader()
 {
 	companion object
 	{
-		init
+		private var loaded = false;
+
+		fun loadLibrary()
 		{
+			if(!loaded)
+			{
+				loaded = true;
+				System.loadLibrary("dynamicopmodeloader");
+			}
 		}
 	}
-	
 	private val stdlib = LuaStdlib();
 	private val builder = FunctionBuilder();
 	
@@ -19,7 +25,6 @@ class OpmodeLoader()
 		builder.setCurrentObject(stdlib);
 		
 		builder.addObjectFunction("print", LuaType.Void, listOf(LuaType.String));
-		builder.addObjectFunction("err", LuaType.Void, listOf(LuaType.String));
 	}
 	
 	/**
