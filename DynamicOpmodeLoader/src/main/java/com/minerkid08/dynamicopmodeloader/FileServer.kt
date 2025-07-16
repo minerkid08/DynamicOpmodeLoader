@@ -11,7 +11,7 @@ class FileServer
 	{
 		fun start()
 		{
-			System.loadLibrary("dynamicopmodeloader");
+			OpmodeLoader.loadLibrary();
 			FileServer().startUnzipServer();
 		}
 	}

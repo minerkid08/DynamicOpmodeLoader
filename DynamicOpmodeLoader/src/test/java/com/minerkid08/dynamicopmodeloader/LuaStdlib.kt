@@ -6,10 +6,24 @@ class LuaStdlib
 	{
 		println(string);
 	}
-	
-	fun err(msg: String)
+
+	fun luaErr(msg: String)
 	{
-		println(msg);
 		throw LuaError(msg);
+	}
+
+	fun cpErr(msg: String)
+	{
+		throw CompileError(msg);
+	}
+
+	fun fbErr(msg: String)
+	{
+		throw FunctionBuilderError(msg);
+	}
+
+	fun opmodeErr(msg: String)
+	{
+		throw UndefinedOpmodeError(msg);
 	}
 }

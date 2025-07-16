@@ -43,20 +43,25 @@ jobject makeCallback(int index)
 	return object;
 }
 
+int handleStackTrace(lua_State* l);
+
 JNIEXPORT void JNICALL callCallback(JNIEnv* env2, jobject this, jobjectArray args)
 {
 	int id = (*env)->GetIntField(env, this, idField);
 
+  int i = lua_gettop(l);
+
+  lua_pushcfunction(l, handleStackTrace);
 	lua_getglobal(l, "__callbacks");
 	lua_geti(l, -1, id);
 	if (lua_type(l, -1) == LUA_TFUNCTION)
 	{
 		int len = (*env)->GetArrayLength(env, args);
 		pushArgs(args, len);
-		if (lua_pcall(l, len, 0, 0))
-			err("%s", lua_tostring(l, -1));
+		if (lua_pcall(l, len, 0, i + 1))
+			luaErr(lua_tostring(l, -1));
 	}
 	else
-		err("invalid callback id used");
-	lua_settop(l, 2);
+		opErr("invalid callback");
+	lua_settop(l, i);
 }

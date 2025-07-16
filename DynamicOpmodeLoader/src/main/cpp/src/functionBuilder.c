@@ -48,10 +48,10 @@ void fbReset()
 {
 	int s = dynList_size(objects);
 	for (int i = 0; i < s; i++)
-    {
-        if(objects[i] != 0)
-           (*env)->DeleteGlobalRef(env, objects[i]);
-    }
+	{
+		if (objects[i] != 0)
+			(*env)->DeleteGlobalRef(env, objects[i]);
+	}
 	dynList_resize((void**)&objects, 0);
 	dynList_resize((void**)&functions, 0);
 }
@@ -163,15 +163,11 @@ jvalue* checkArgs(lua_State* l, Function* fun, int s)
 		for (int i = 0; i < argc; i++)
 		{
 			char type = lua_type(l, i + 2 + s);
-			if (type == LUA_TNUMBER)
-			{
-				if (fun->argTypes[i] != LUA_TNUMBER && fun->argTypes[i] != TINT && fun->argTypes[i] != TFLOAT)
-				{
-					luaL_error(l, "expected number but got not number");
-					return 0;
-				}
-			}
-			else if (type != fun->argTypes[i])
+			char type2 = fun->argTypes[i];
+			if (type2 == TINT || type2 == TFLOAT)
+				type2 = LUA_TNUMBER;
+
+			if (type != type2)
 			{
 				const char* msg;
 				const char* typearg;
@@ -181,7 +177,7 @@ jvalue* checkArgs(lua_State* l, Function* fun, int s)
 					typearg = "light userdata";
 				else
 					typearg = luaL_typename(l, i + 2 + s);
-				msg = lua_pushfstring(l, "%s expected, got %s", lua_typename(l, fun->argTypes[i]), typearg);
+				msg = lua_pushfstring(l, "%s expected, got %s", lua_typename(l, type2), typearg);
 				luaL_argerror(l, i + 1, msg);
 				return 0;
 			}
@@ -277,10 +273,6 @@ int call(lua_State* l, Function* fun, jobject obj, jvalue* args)
 
 		jobject ref = (*env)->NewGlobalRef(env, res);
 
-		int objectId = dynList_size(objects);
-		dynList_resize((void**)&objects, objectId + 1);
-		objects[objectId] = ref;
-
 		lua_newtable(l);
 		lua_pushnil(l);
 		while (lua_next(l, objPos) != 0)
@@ -342,11 +334,11 @@ int objectGC(lua_State* l)
 		luaL_error(l, "attempted to free invalid object");
 	jobject ref = lua_touserdata(l, -1);
 	(*env)->DeleteGlobalRef(env, ref);
-    int len = dynList_size(objects);
-    for(int i = 0; i < len; i++)
-    {
-        if(ref == objects[i])
-            objects[i] = 0;
-    }
+	int len = dynList_size(objects);
+	for (int i = 0; i < len; i++)
+	{
+		if (ref == objects[i])
+			objects[i] = 0;
+	}
 	return 0;
 }

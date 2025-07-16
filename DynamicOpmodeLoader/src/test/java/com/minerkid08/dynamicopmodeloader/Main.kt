@@ -35,7 +35,7 @@ fun run()
         println("found opmode: $opmode");
     }
 
-    opmodeLoader.loadOpmode("testOpmode");
+    opmodeLoader.loadOpmode(":)");
 
     opmodeLoader.start();
 
@@ -47,18 +47,18 @@ class Main
     @Test
     fun main()
     {
-        System.loadLibrary("dynamicopmodeloader");
+        OpmodeLoader.loadLibrary();
         //for (i in 1..20)
-        //run();
-        val action = ParallelAction(
-            SleepAction(0.5),
-            SleepAction(0.5),
-            SleepAction(0.5),
-            SleepAction(0.5),
-            SleepAction(0.5)
-        )
-        action.start();
-        while(action.update() == ActionState.Running);
+            run();
+        //val action = ParallelAction(
+        //    SleepAction(0.5),
+        //    SleepAction(0.5),
+        //    SleepAction(0.5),
+        //    SleepAction(0.5),
+        //    SleepAction(0.5)
+        //)
+        //action.start();
+        //while(action.update() == ActionState.Running);
     }
 
     @Test

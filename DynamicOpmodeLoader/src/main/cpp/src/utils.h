@@ -2,7 +2,10 @@
 #include "jni.h"
 
 void print(const char* fmt, ...);
-void err(const char* fmt, ...);
+void luaErr(const char* msg);
+void cpErr(const char* msg);
+void fbErr(const char* fmt, ...);
+void opErr(const char* fmt, ...);
 void initUtils(jobject object);
 
 jstring getClassName(jclass class);

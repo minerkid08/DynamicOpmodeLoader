@@ -1,18 +1,44 @@
-Colors = {
-	RED = 1,
-	BLUE = 2,
-	YELLOW = 3,
-	NONE = 4,
-	UNKNOWN = 5
-};
+--Colors = {
+--	RED = 1,
+--	BLUE = 2,
+--	YELLOW = 3,
+--	NONE = 4,
+--	UNKNOWN = 5
+--};
+--
+--require("blueMiddle");
+--
+--require("redBasket");
+--require("blueBasket");
+--
+--require("redRight");
+--require("blueLeft");
+--
+--require("testOpmode");
+--require("visionTest");
+function a()
+  b();
+end
 
-require("blueMiddle");
+function c()
+  d();
+end
 
-require("redBasket");
-require("blueBasket");
+function e()
+print(4);
+end
 
-require("redRight");
-require("blueLeft");
+function d()
+  e();
+end
 
-require("testOpmode");
-require("visionTest");
+function b()
+  c();
+end
+
+addOpmode({
+  name = ":)",
+  init = function()
+    a();
+  end
+})

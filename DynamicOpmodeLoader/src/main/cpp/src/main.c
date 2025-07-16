@@ -30,6 +30,37 @@ Function* functions;
 jobject* objects;
 jobject currentObject;
 
+char* stackTrace = 0;
+int stackTraceSize = 0;
+
+int handleStackTrace(lua_State* l)
+{
+	lua_getglobal(l, "debug");
+	lua_getfield(l, -1, "traceback");
+	lua_pushvalue(l, 1);
+	lua_pushinteger(l, 2);
+	lua_call(l, 2, 1);
+
+	const char* msg = lua_tostring(l, -1);
+	int len = strlen(msg);
+	if (stackTrace == 0)
+	{
+		stackTrace = malloc(len + 1);
+		stackTraceSize = len;
+	}
+	else
+	{
+		if (len > stackTraceSize)
+		{
+			free(stackTrace);
+			stackTrace = malloc(len + 1);
+		}
+	}
+  strcpy(stackTrace, msg);
+
+	return 1;
+}
+
 int addOpmode(lua_State* l)
 {
 	int top = lua_gettop(l);
@@ -65,9 +96,9 @@ JNIEXPORT int JNICALL JNI_OnLoad(JavaVM* vm, void* reserved)
 {
 	opmodes = dynList_new(0, sizeof(Opmode));
 	dynList_reserve((void**)&opmodes, 5);
-	
-  fbInit();
-  return 0x000a0000; //JNI_VERSION_10;
+
+	fbInit();
+	return 0x000a0000; // JNI_VERSION_10;
 }
 
 JNIEXPORT void JNICALL close(JNIEnv* env2, jobject this)
@@ -84,7 +115,7 @@ JNIEXPORT void JNICALL close(JNIEnv* env2, jobject this)
 	if (status != LUA_OK)
 		print("lua not ok");
 	lua_close(l);
-    l = 0;
+	l = 0;
 	print("lua_state closed");
 	fbReset();
 }
@@ -94,10 +125,10 @@ JNIEXPORT void JNICALL init2(JNIEnv* env2, jobject this, jobject stdlib)
 {
 	env = env2;
 	initUtils(stdlib);
-  initCallback();
+	initCallback();
 
-  if(l != 0)
-      close(env2, this);
+	if (l != 0)
+		close(env2, this);
 
 	print("lua_state initalising");
 
@@ -111,7 +142,7 @@ JNIEXPORT void JNICALL init2(JNIEnv* env2, jobject this, jobject stdlib)
 	if (luaL_dostring(l, "package.path = \"/sdcard/lua/?.lua\""))
 #endif
 	{
-		err("%s", lua_tostring(l, -1));
+		cpErr(lua_tostring(l, -1));
 		return;
 	}
 	lua_pushcfunction(l, addOpmode);
@@ -121,22 +152,32 @@ JNIEXPORT void JNICALL init2(JNIEnv* env2, jobject this, jobject stdlib)
 	lua_setglobal(l, "data");
 
 	fbInitLua();
-  initCallbackLua();
+	initCallbackLua();
 	print("lua_state initalised");
 }
 
 JNIEXPORT jobjectArray JNICALL init(JNIEnv* env2, jobject this)
 {
 	env = env2;
+
+  lua_pushcfunction(l, handleStackTrace);
+
 #ifndef ANDROID
-	if (luaL_dofile(l, "lua/init.lua"))
+	if (luaL_loadfile(l, "lua/init.lua"))
 #else
-	if (luaL_dofile(l, "/sdcard/lua/init.lua"))
+	if (luaL_loadfile(l, "/sdcard/lua/init.lua"))
 #endif
 	{
-		err("%s", lua_tostring(l, -1));
+		cpErr(lua_tostring(l, -1));
 		return NULL;
 	}
+
+  if(lua_pcall(l, 0, 0, lua_gettop(l) - 1))
+	{
+		luaErr(lua_tostring(l, -1));
+		return NULL;
+	}
+  
 
 	int opmodeCount = dynList_size(opmodes);
 
@@ -172,23 +213,24 @@ JNIEXPORT void JNICALL loadOpmode(JNIEnv* env2, jobject this, jstring opmodeName
 
 	if (currentOpmode == -1)
 	{
-		err("cant find opmode \'%s\'", name);
+		opErr("cant find opmode \'%s\'", name);
 		return;
 	}
 
 	lua_settop(l, 0);
+  lua_pushcfunction(l, handleStackTrace);
 	lua_getglobal(l, "data");
 	lua_geti(l, -1, currentOpmode);
 	lua_getfield(l, -1, "init");
 	if (lua_type(l, -1) == LUA_TFUNCTION)
 	{
-		if (lua_pcall(l, 0, 0, 0))
+		if (lua_pcall(l, 0, 0, 1))
 		{
-			err("%s", lua_tostring(l, -1));
+			luaErr(lua_tostring(l, -1));
 			return;
 		}
 	}
-	lua_settop(l, 2);
+	lua_settop(l, 3);
 	print("loaded opmode \'%s\'\n", name);
 }
 
@@ -199,12 +241,12 @@ JNIEXPORT void JNICALL start(JNIEnv* env2, jobject this, int recognitionId)
 	if (lua_type(l, -1) == LUA_TFUNCTION)
 	{
 		lua_pushnumber(l, recognitionId);
-		if (lua_pcall(l, 1, 0, 0))
+		if (lua_pcall(l, 1, 0, 1))
 		{
-			err("%s", lua_tostring(l, -1));
+			luaErr(lua_tostring(l, -1));
 		}
 	}
-	lua_settop(l, 2);
+	lua_settop(l, 3);
 }
 
 JNIEXPORT void JNICALL update(JNIEnv* env2, jobject this, double deltaTime, double elapsedTime)
@@ -215,12 +257,12 @@ JNIEXPORT void JNICALL update(JNIEnv* env2, jobject this, double deltaTime, doub
 	{
 		lua_pushnumber(l, deltaTime);
 		lua_pushnumber(l, elapsedTime);
-		if (lua_pcall(l, 2, 0, 0))
+		if (lua_pcall(l, 2, 0, 1))
 		{
-			err("%s", lua_tostring(l, -1));
+			luaErr(lua_tostring(l, -1));
 		}
 	}
-	lua_settop(l, 2);
+	lua_settop(l, 3);
 }
 
 JNIEXPORT void JNICALL callFun(JNIEnv* env2, jobject this, jstring name, jobjectArray args)
@@ -232,12 +274,12 @@ JNIEXPORT void JNICALL callFun(JNIEnv* env2, jobject this, jstring name, jobject
 	{
 		int len = (*env)->GetArrayLength(env, args);
 		pushArgs(args, len);
-		if (lua_pcall(l, len, 0, 0))
-			err("%s", lua_tostring(l, -1));
+		if (lua_pcall(l, len, 0, 1))
+			luaErr(lua_tostring(l, -1));
 	}
 	else
-		err("undefined function: \'%s\'", nameStr);
-	lua_settop(l, 2);
+		opErr("undefined function: \'%s\'", nameStr);
+	lua_settop(l, 3);
 }
 
 JNIEXPORT void JNICALL callOpmodeFun(JNIEnv* env2, jobject this, jstring name, jobjectArray args)
@@ -250,9 +292,9 @@ JNIEXPORT void JNICALL callOpmodeFun(JNIEnv* env2, jobject this, jstring name, j
 		int len = (*env)->GetArrayLength(env, args);
 		pushArgs(args, len);
 		if (lua_pcall(l, len, 0, 0))
-			err("%s", lua_tostring(l, -1));
+			luaErr(lua_tostring(l, -1));
 	}
 	else
-		err("undefined opmode function: \'%s\'", nameStr);
-	lua_settop(l, 2);
+		opErr("undefined function: \'%s\'", nameStr);
+	lua_settop(l, 3);
 }
