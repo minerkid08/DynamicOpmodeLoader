@@ -14,7 +14,10 @@ void function_initX(Function* this, jclass class, const char* name, const char* 
 	if ((*env)->ExceptionCheck(env))
 	{
 		(*env)->ExceptionDescribe(env);
-		fbErr("can't find function with signature '%s'", sig);
+    jstring str = getClassName(class);
+    const char* str2 = (*env)->GetStringUTFChars(env, str, 0);
+		fbErr("can't find function with signature '%s.%s%s'", str2, name, sig);
+    (*env)->ReleaseStringUTFChars(env, str, str2);
 	}
 
 	this->obj = currentObject;

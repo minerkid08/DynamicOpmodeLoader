@@ -1,5 +1,10 @@
 package com.minerkid08.dynamicopmodeloader
 
+import com.minerkid08.dynamicopmodeloader.error.CompileError
+import com.minerkid08.dynamicopmodeloader.error.FunctionBuilderError
+import com.minerkid08.dynamicopmodeloader.error.LuaError
+import com.minerkid08.dynamicopmodeloader.error.UndefinedOpmodeError
+
 class LuaStdlib
 {
 	fun print(string: String)

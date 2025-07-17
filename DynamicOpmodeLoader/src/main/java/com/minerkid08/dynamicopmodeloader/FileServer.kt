@@ -9,6 +9,7 @@ class FileServer
 {
 	companion object
 	{
+		@JvmStatic
 		fun start()
 		{
 			OpmodeLoader.loadLibrary();
@@ -31,16 +32,15 @@ class FileServer
 
 				val lenBytes= ByteArray(8);
 				stream.read(lenBytes, 0, 8);
-				val len: ULong = lenBytes.foldIndexed(0uL) { index, acc, byte -> acc + (byte.toULong() shl index * 8)};
+				val len: ULong = lenBytes.foldIndexed(0uL, { index, acc, byte -> acc + (byte.toULong() shl index * 8)});
 
-				var bytes = 0;
 				var bytesRead = 0uL;
 				val file = File("$path/data.pak");
 				val outputStream = FileOutputStream(file);
 				val arr = ByteArray(512);
 				while(bytesRead < len)
 				{
-					bytes = stream.read(arr, 0, min(512, (len - bytesRead).toInt()));
+					val bytes = stream.read(arr, 0, min(512, (len - bytesRead).toInt()));
 					outputStream.write(arr, 0, bytes);
 					bytesRead += bytes.toULong();
 				}

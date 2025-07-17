@@ -1,11 +1,11 @@
 package com.minerkid08.dynamicopmodeloader
 
-class OpmodeLoader()
+class OpmodeLoader
 {
 	companion object
 	{
 		private var loaded = false;
-
+		@JvmStatic
 		fun loadLibrary()
 		{
 			if(!loaded)
@@ -20,6 +20,8 @@ class OpmodeLoader()
 	
 	init
 	{
+		loadLibrary();
+
 		internalInit2(stdlib);
 		
 		builder.setCurrentObject(stdlib);
@@ -28,7 +30,7 @@ class OpmodeLoader()
 	}
 	
 	/**
-	 * returns a function builder object for exposing functions to lua
+	 * Returns a function builder object for exposing functions to lua.
 	 */
 	fun getFunctionBuilder(): FunctionBuilder
 	{
@@ -36,7 +38,7 @@ class OpmodeLoader()
 	}
 	
 	/**
-	 * initalizes the lua instance and returns a list with all of the opmode names
+	 * Initializes the lua instance and returns a list with all of the opmode names.
 	 */
 	fun init(): Array<String>?
 	{
@@ -44,32 +46,32 @@ class OpmodeLoader()
 	}
 
 	/**
-	 * closes the lua instance and cleans up all refrences to jobjects
+	 * Closes the lua instance and cleans up all references to jobjects.
 	 */
 	external fun close();
 
 	/**
-	 * loads an opmode to be run
+	 * Loads an opmode to be run and calls init on that opmode.
 	 */
 	external fun loadOpmode(name: String);
 	
 	/**
-	 * starts the opmode
+	 * Calls start on the opmode with recognition as the first argument.
 	 */
 	external fun start(recognition: Int = 0);
 	
 	/**
-	 * calls the update function on the lua opmode with deltaTime as the first argument and elapsedTime as the second
+	 * Calls the update function on the lua opmode with deltaTime as the first argument and elapsedTime as the second.
 	 */
 	external fun update(deltaTime: Double, elapsedTime: Double);
 	
 	/**
-	 * calls a global function with args as the arguments
+	 * Calls a global function with args as the arguments.
 	 */
 	external fun callFun(name: String, vararg args: Any);
 	
 	/**
-	 * calls a function in the opmode table with args as the arguments
+	 * Calls a function in the opmode table with args as the arguments.
 	 */
 	external fun callOpmodeFun(name: String, vararg args: Any);
 	
