@@ -9,11 +9,12 @@ fun printf(fmt: String, vararg args: Any?)
 
 class E
 {
-    fun doThing(callback: LuaCallback)
+    fun doThing(callback: LuaCallback): Float
     {
         println("did thing");
         callback.call(69);
         println("called callback");
+        return 2.0f;
     }
 }
 
@@ -26,7 +27,9 @@ fun run()
     val e = E();
 
     builder.setCurrentObject(e);
-    builder.addObjectFunction("doThing", LuaType.Void, listOf(LuaType.Callback));
+    builder.pushTable("help");
+    builder.addObjectFunction("doThing", LuaType.Float, listOf(LuaType.Callback));
+    builder.popTable();
 
     val opmodes = opmodeLoader.init() ?: return;
 

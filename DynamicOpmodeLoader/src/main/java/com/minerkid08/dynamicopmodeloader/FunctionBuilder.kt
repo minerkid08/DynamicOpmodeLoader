@@ -71,6 +71,9 @@ class FunctionBuilder
 		addFunctionc(clazz, name, sig, typeToInt(rtnType), argc);
 	}
 
+	external fun pushTable(name: String);
+	external fun popTable();
+
 	private external fun addFunction(name: String, funSignature: String, rtnType: Int, argc: Int);
 
 	private external fun addFunctionc(

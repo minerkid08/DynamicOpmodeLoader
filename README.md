@@ -111,7 +111,7 @@ FunctionBuilder builder = opmodeLoader.getFunctionBuilder();
 builder.addClassFunction(ExampleClassFunctionObject.class, "doThing", LuaType.String, List.of(LuaType.Int, LuaType.Int));
 ```
 
-Defining object functions is similar but requires you to set the object first with `<T> FunctionBuilder.SetCurrentObject(T object)` then add the functin with `FunctionBuilder.addObjectFunction(String name, LuaType returnType = LuaType.Void, List<LuaType> argTypes = null)`
+Defining object functions is similar but requires you to set the object first with `<T> FunctionBuilder.setCurrentObject(T object)` then add the functin with `FunctionBuilder.addObjectFunction(String name, LuaType returnType = LuaType.Void, List<LuaType> argTypes = null)`
 ```java
 class ExampleObjectFunctionObject
 {
@@ -140,6 +140,30 @@ object:doThing(3, 4);
 -- this is so the object is passed as the first argument into the function as lua does not have classes like other languages
 -- this is equivalent to
 object.doThing(object, 3, 4);
+```
+
+Object functions can be put into lua tables to help organize them like drive or arm functions.
+You can create a table using `FunctionBuilder.pushTable(String name)` and all object functions defined after it get put in the table.
+After all of your functions are in the table you have to pop the table with `FunctionBuilder.popTable()`.
+
+```java
+FunctionBuilder builder;
+
+builder.pushTable("robot");
+
+builder.addObjectFunction("drive" ... );
+// adds function robot.drive()
+
+builder.pushTable("arm");
+
+builder.addObjectFunction("setPos" ... );
+// adds function robot.arm.setPos()
+
+// pop arm table
+builder.popTable();
+
+// pop robot table
+builder.popTable();
 ```
 
 ### Callbacks

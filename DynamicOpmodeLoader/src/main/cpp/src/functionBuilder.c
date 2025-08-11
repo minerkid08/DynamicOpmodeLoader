@@ -12,10 +12,17 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define pushTable Java_com_minerkid08_dynamicopmodeloader_FunctionBuilder_pushTable
+#define popTable Java_com_minerkid08_dynamicopmodeloader_FunctionBuilder_popTable
+
 #define addObject Java_com_minerkid08_dynamicopmodeloader_FunctionBuilder_setCurrentObject
 #define createClass Java_com_minerkid08_dynamicopmodeloader_FunctionBuilder_createClass
 #define addFun Java_com_minerkid08_dynamicopmodeloader_FunctionBuilder_addFunction
 #define addFunc Java_com_minerkid08_dynamicopmodeloader_FunctionBuilder_addFunctionc
+
+static int tableLevel = 0;
+
+static char** tableNames;
 
 int callFunc(lua_State* l);
 int callFunc2(lua_State* l);
@@ -27,6 +34,8 @@ void fbInit()
 	dynList_reserve((void**)&functions, 25);
 	objects = dynList_new(0, sizeof(jobject));
 	dynList_reserve((void**)&objects, 5);
+	tableNames = dynList_new(0, sizeof(char*));
+	dynList_reserve((void**)&tableNames, 5);
 }
 
 void fbInitLua()
@@ -54,6 +63,42 @@ void fbReset()
 	}
 	dynList_resize((void**)&objects, 0);
 	dynList_resize((void**)&functions, 0);
+
+	s = dynList_size(tableNames);
+	for (int i = 0; i < s; i++)
+		free(tableNames[i]);
+	dynList_resize((void**)&tableNames, 0);
+	tableLevel = 0;
+}
+
+JNIEXPORT void JNICALL pushTable(JNIEnv* env, jobject this, jstring name)
+{
+	lua_newtable(l);
+	const char* c = (*env)->GetStringUTFChars(env, name, 0);
+	char* n = malloc(strlen(c) + 1);
+	strcpy(n, c);
+	tableNames[tableLevel] = n;
+	(*env)->ReleaseStringUTFChars(env, name, c);
+
+	tableLevel++;
+
+	dynList_resize((void**)&tableNames, tableLevel);
+	print("pushed table %d, %s", tableLevel - 1, n);
+}
+
+JNIEXPORT void JNICALL popTable(JNIEnv* env, jobject this)
+{
+	char* name = tableNames[tableLevel - 1];
+
+	dynList_resize((void**)&tableNames, tableLevel - 1);
+	tableLevel--;
+
+	if (tableLevel > 0)
+		lua_setfield(l, -2, name);
+	else
+		lua_setglobal(l, name);
+	print("poped table %d, %s", tableLevel, name);
+	free(name);
 }
 
 JNIEXPORT void JNICALL createClass(JNIEnv* env, jobject this, jstring str)
@@ -96,7 +141,10 @@ JNIEXPORT void JNICALL addFun(JNIEnv* env2, jobject this, jstring name, jstring 
 	lua_setfield(l, -2, "id");
 	luaL_getmetatable(l, "luaFunc");
 	lua_setmetatable(l, -2);
-	lua_setglobal(l, name2);
+	if (tableLevel > 0)
+		lua_setfield(l, -2, name2);
+	else
+		lua_setglobal(l, name2);
 
 	print("add fun %s with id %d with sig %s", name2, functionId, signature2);
 
