@@ -25,6 +25,7 @@ function c()
 end
 
 function e()
+  print(4);
 end
 
 function d()
@@ -37,10 +38,11 @@ end
 
 addOpmode({
   name = ":)",
-    init = function()
-        local f = help.doThing(a);
-        local g = tostring(f);
-    print(type(g));
-    print(g);
+  init = function()
+    local e = getE();
+    local f = e:printThing("heh")
+        :add(1, 2);
+    print(tostring(f));
+   e:doThing(a);
   end
 })

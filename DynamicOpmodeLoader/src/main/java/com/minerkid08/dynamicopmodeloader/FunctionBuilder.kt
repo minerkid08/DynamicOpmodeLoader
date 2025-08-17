@@ -1,6 +1,10 @@
 package com.minerkid08.dynamicopmodeloader
 
-import com.minerkid08.dynamicopmodeloader.error.LuaError
+import com.minerkid08.dynamicopmodeloader.error.FunctionBuilderError
+import java.lang.reflect.Method
+
+annotation class OpmodeLoaderBuilderFunction;
+annotation class OpmodeLoaderFunction;
 
 private enum class LuaTypeId(val id: kotlin.Int)
 {
@@ -45,6 +49,110 @@ class FunctionBuilder
 	external fun createClass(name: String);
 
 	/**
+	 * Iterates through all methods on a class with the OpmodeLoaderFunction and OpmodeLoaderBuilderFunction annotations and adds them to a lua class;
+	 */
+	fun addClassAsClass(clazz: Class<*>)
+	{
+		val toAdd = ArrayList<Method>();
+		val toAddBuilder = ArrayList<Method>();
+		val methods = clazz.declaredMethods;
+		for (method in methods)
+		{
+			var add = false;
+			var addBuilder = false;
+			for (annotation in method.annotations)
+			{
+				if (annotation.annotationClass == OpmodeLoaderFunction::class)
+				{
+					add = true;
+					break;
+				}
+				if (annotation.annotationClass == OpmodeLoaderBuilderFunction::class)
+				{
+					addBuilder = true;
+					break;
+				}
+			}
+			if (add)
+				toAdd.add(method)
+			if (addBuilder)
+				toAddBuilder.add(method)
+		}
+		if (toAdd.isEmpty() && toAddBuilder.isEmpty())
+			return;
+
+		for (method in toAdd)
+		{
+			val args = ArrayList<LuaType>();
+			for (arg in method.parameterTypes)
+			{
+				println(arg.name);
+				args.add(stringToLuaType(arg.name));
+			}
+			addClassFunction(clazz, method.name, stringToLuaType(method.returnType.name), args);
+		}
+		for (method in toAddBuilder)
+		{
+			val args = ArrayList<LuaType>();
+			for (arg in method.parameterTypes)
+			{
+				args.add(stringToLuaType(arg.name));
+			}
+			addClassFunction(clazz, method.name, LuaType.Builder, args);
+		}
+	}
+
+	/**
+	 * Takes a class and adds all of its functions with the OpmodeLoaderFunction annotation to lua as global functions.
+	 */
+	fun addClassAsGlobal(clazz: Class<*>)
+	{
+		val constructor = clazz.constructors[0];
+		val obj = constructor.newInstance();
+		addObjectAsGlobal(obj)
+	}
+
+	/**
+	 * Takes a object and adds all of its functions with the OpmodeLoaderFunction annotation to lua as global functions.
+	 */
+	fun <T> addObjectAsGlobal(obj: T)
+	{
+		if (obj == null)
+			throw FunctionBuilderError("object cannot be null");
+
+		val clazz = obj!!::class.java;
+		val toAdd = ArrayList<Method>();
+		val methods = clazz.methods;
+		for (method in methods)
+		{
+			var add = false;
+			for (annotation in method.annotations)
+			{
+				if (annotation.annotationClass == OpmodeLoaderFunction::class)
+				{
+					add = true;
+					break;
+				}
+			}
+			if (add)
+				toAdd.add(method)
+		}
+		if (toAdd.isEmpty())
+			return;
+
+		setCurrentObject(obj);
+		for (method in toAdd)
+		{
+			val args = ArrayList<LuaType>();
+			for (arg in method.parameterTypes)
+			{
+				args.add(stringToLuaType(arg.name));
+			}
+			addObjectFunction(method.name, stringToLuaType(method.returnType.name), args);
+		}
+	}
+
+	/**
 	 * Adds a function from a java object to lua as a global.
 	 */
 	fun addObjectFunction(
@@ -71,7 +179,19 @@ class FunctionBuilder
 		addFunctionc(clazz, name, sig, typeToInt(rtnType), argc);
 	}
 
+	/**
+	 * Pushes a table to the stack.
+	 * When an object function is added, it will be placed into this table.
+	 * If there is already a table on the stack then the new table will be placed inside of it.
+	 *
+	 * Tables have to be popped for you to be able to access it in lua.
+	 */
 	external fun pushTable(name: String);
+
+	/**
+	 * Pops a table off of the stack.
+	 * A table has to be popped for you to be able to access it in lua.
+	 */
 	external fun popTable();
 
 	private external fun addFunction(name: String, funSignature: String, rtnType: Int, argc: Int);
@@ -92,8 +212,8 @@ class FunctionBuilder
 		{
 			for (type in argTypes)
 			{
-				if (type is LuaType.VoidT) throw LuaError("Void is not a valid argument type");
-				if (type is LuaType.BuilderT) throw LuaError("Builder is not a valid argument type");
+				if (type is LuaType.VoidT) throw FunctionBuilderError("Void is not a valid argument type");
+				if (type is LuaType.BuilderT) throw FunctionBuilderError("Builder is not a valid argument type");
 				funSignature += typeToStr(type);
 			}
 		}
@@ -135,6 +255,21 @@ class FunctionBuilder
 			is LuaType.BuilderT  -> LuaTypeId.Builder.id;
 			is LuaType.CallbackT -> LuaTypeId.Function.id;
 			else                 -> LuaTypeId.Nil.id;
+		}
+	}
+
+	private fun stringToLuaType(type: String): LuaType
+	{
+		return when (type)
+		{
+			"int"                                            -> LuaType.Int
+			"double"                                         -> LuaType.Double
+			"float"                                          -> LuaType.Float
+			"boolean"                                        -> LuaType.Bool
+			"java.lang.string"                               -> LuaType.String
+			"void"                                           -> LuaType.Void
+			"com.minerkid08.dynamicopmodeloader.LuaCallback" -> LuaType.Callback
+			else                                             -> LuaType.Object(Class.forName(type))
 		}
 	}
 }
