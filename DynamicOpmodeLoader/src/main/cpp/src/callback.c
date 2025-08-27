@@ -2,7 +2,7 @@
 #include "global.h"
 #include "jni.h"
 #include "lua/lua.h"
-#include "utils.h"
+#include "error.h"
 #include "vararg.h"
 
 #define callCallback Java_com_minerkid08_dynamicopmodeloader_LuaCallback_call

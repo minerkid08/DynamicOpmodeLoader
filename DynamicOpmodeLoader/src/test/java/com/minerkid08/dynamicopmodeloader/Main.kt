@@ -27,20 +27,27 @@ class E
 	}
 }
 
-class F
+object F
 {
+	@JvmStatic
 	@OpmodeLoaderFunction
 	fun getE() = E();
 }
 
+enum class Enum
+{
+	Forward, Backward
+}
+
 fun run()
 {
+	
 	val opmodeLoader = OpmodeLoader();
 
 	val builder = opmodeLoader.getFunctionBuilder();
 
 	builder.addClassAsClass(E::class.java);
-	builder.addClassAsGlobal(F::class.java);
+	builder.addStaticClassAsGlobal(F::class.java);
 
 	val opmodes = opmodeLoader.init() ?: return;
 
@@ -52,6 +59,13 @@ fun run()
 	opmodeLoader.loadOpmode(":)");
 
 	opmodeLoader.start();
+
+	while(true)
+	{
+		val b = opmodeLoader.update();
+		if(b)
+			break;
+	}
 
 	opmodeLoader.close();
 }

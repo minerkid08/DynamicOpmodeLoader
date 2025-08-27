@@ -32,6 +32,11 @@ int main(int argc, const char** argv)
 
 	for (int i = 1; i < argc; i++)
 	{
+    if (strcmp(argv[i], "-h") == 0)
+    {
+      printf("Ussage: pack <opts>\n  -s set directory to upload\n  -o set file to pack to\n  -nopack  dont pack files\n  -noupload do not upload pack file\n  -printFiles prints files that are packed\n  -printTree print internal representation of files\n");
+      return 0;
+    }
 		if (strcmp(argv[i], "-nopack") == 0)
 			shouldPack = 0;
 		if (strcmp(argv[i], "-noupload") == 0)
@@ -118,10 +123,8 @@ int main(int argc, const char** argv)
 		struct sockaddr_in addr = {0};
 		addr.sin_family = AF_INET;
 		addr.sin_port = htons(6969);
-
-		char* addrstr = IP "6969";
-		inet_pton(AF_INET, addrstr, &addr.sin_addr);
-
+    addr.sin_addr.s_addr = inet_addr(IP);
+ 
 		if (connect(sock, (struct sockaddr*)&addr, sizeof(addr)))
 		{
 			printf("connetction error\n");

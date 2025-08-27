@@ -15,18 +15,16 @@ class OpmodeLoader
 			}
 		}
 	}
-	private val stdlib = LuaStdlib();
 	private val builder = FunctionBuilder();
 	
 	init
 	{
 		loadLibrary();
 
-		internalInit2(stdlib);
-		
-		builder.setCurrentObject(stdlib);
-		
-		builder.addObjectFunction("print", LuaType.Void, listOf(LuaType.String));
+		internalInit2();
+		builder.setCurrentClass(LuaStdlib::class.java);
+
+		builder.addStaticFunction("print", LuaType.Void, listOf(LuaType.String));
 	}
 	
 	/**
@@ -62,8 +60,11 @@ class OpmodeLoader
 	
 	/**
 	 * Calls the update function on the lua opmode with deltaTime as the first argument and elapsedTime as the second.
+	 * @param deltaTime time between last call and this one
+	 * @param elapsedTime time that the opmode has been running
+	 * @return should the opmode stop
 	 */
-	external fun update(deltaTime: Double, elapsedTime: Double);
+	external fun update(deltaTime: Double = 0.0, elapsedTime: Double = 0.0): Boolean;
 	
 	/**
 	 * Calls a global function with args as the arguments.
@@ -75,6 +76,6 @@ class OpmodeLoader
 	 */
 	external fun callOpmodeFun(name: String, vararg args: Any);
 	
-	private external fun internalInit2(luaStdlib: LuaStdlib);
+	private external fun internalInit2();
 	private external fun internalInit(): Array<String>?;
 }

@@ -1,21 +1,3 @@
---Colors = {
---	RED = 1,
---	BLUE = 2,
---	YELLOW = 3,
---	NONE = 4,
---	UNKNOWN = 5
---};
---
---require("blueMiddle");
---
---require("redBasket");
---require("blueBasket");
---
---require("redRight");
---require("blueLeft");
---
---require("testOpmode");
---require("visionTest");
 function a()
   b();
 end
@@ -35,7 +17,7 @@ end
 function b()
   c();
 end
-
+local c3 = 0;
 addOpmode({
   name = ":)",
   init = function()
@@ -43,6 +25,13 @@ addOpmode({
     local f = e:printThing("heh")
         :add(1, 2);
     print(tostring(f));
-   e:doThing(a);
+    --e:doThing(a);
+  end,
+  update = function()
+    c3 = c3 + 1;
+    if (c3 > 1000) then
+      return true;
+    end
+    return false;
   end
 })

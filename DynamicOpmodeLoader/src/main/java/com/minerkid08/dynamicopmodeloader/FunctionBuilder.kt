@@ -1,27 +1,11 @@
 package com.minerkid08.dynamicopmodeloader
 
-import com.minerkid08.dynamicopmodeloader.error.FunctionBuilderError
 import java.lang.reflect.Method
+import java.lang.reflect.Modifier
 
 annotation class OpmodeLoaderBuilderFunction;
 annotation class OpmodeLoaderFunction;
 
-private enum class LuaTypeId(val id: kotlin.Int)
-{
-	None(-1),
-	Nil(0),
-	Bool(1),
-	LightUserData(2),
-	Number(3),
-	String(4),
-	Table(5),
-	Function(6),
-	UserData(7),
-	Thread(8),
-	Float(9),
-	Int(10),
-	Builder(11)
-}
 
 /**
  * Type for callbacks to lua.
@@ -41,6 +25,7 @@ class FunctionBuilder
 	 * Sets the object to pull object functions from.
 	 */
 	external fun <T> setCurrentObject(thing: T);
+	external fun <T> setCurrentClass(thing: T);
 
 	/**
 	 * Creates a class for a lua function to return.
@@ -58,6 +43,8 @@ class FunctionBuilder
 		val methods = clazz.declaredMethods;
 		for (method in methods)
 		{
+			if (Modifier.isStatic(method.modifiers))
+				continue;
 			var add = false;
 			var addBuilder = false;
 			for (annotation in method.annotations)
@@ -85,18 +72,15 @@ class FunctionBuilder
 		{
 			val args = ArrayList<LuaType>();
 			for (arg in method.parameterTypes)
-			{
-				println(arg.name);
-				args.add(stringToLuaType(arg.name));
-			}
-			addClassFunction(clazz, method.name, stringToLuaType(method.returnType.name), args);
+				args.add(LuaType.fromStr(arg.name));
+			addClassFunction(clazz, method.name, LuaType.fromStr(method.returnType.name), args);
 		}
 		for (method in toAddBuilder)
 		{
 			val args = ArrayList<LuaType>();
 			for (arg in method.parameterTypes)
 			{
-				args.add(stringToLuaType(arg.name));
+				args.add(LuaType.fromStr(arg.name));
 			}
 			addClassFunction(clazz, method.name, LuaType.Builder, args);
 		}
@@ -125,6 +109,8 @@ class FunctionBuilder
 		val methods = clazz.methods;
 		for (method in methods)
 		{
+			if (Modifier.isStatic(method.modifiers))
+				continue;
 			var add = false;
 			for (annotation in method.annotations)
 			{
@@ -146,22 +132,70 @@ class FunctionBuilder
 			val args = ArrayList<LuaType>();
 			for (arg in method.parameterTypes)
 			{
-				args.add(stringToLuaType(arg.name));
+				args.add(LuaType.fromStr(arg.name));
 			}
-			addObjectFunction(method.name, stringToLuaType(method.returnType.name), args);
+			addGlobalFunction(method.name, LuaType.fromStr(method.returnType.name), args);
+		}
+	}
+
+	/**
+	 * Takes a object and adds all of its static functions with the OpmodeLoaderFunction annotation to lua as global functions.
+	 */
+	fun addStaticClassAsGlobal(obj: Class<*>)
+	{
+		val toAdd = ArrayList<Method>();
+		val methods = obj.methods;
+		for (method in methods)
+		{
+			if (!Modifier.isStatic(method.modifiers))
+				continue;
+			var add = false;
+			for (annotation in method.annotations)
+			{
+				if (annotation.annotationClass == OpmodeLoaderFunction::class)
+				{
+					add = true;
+					break;
+				}
+			}
+			if (add)
+				toAdd.add(method)
+		}
+		if (toAdd.isEmpty())
+			return;
+
+		setCurrentClass(obj);
+		for (method in toAdd)
+		{
+			val args = ArrayList<LuaType>();
+			for (arg in method.parameterTypes)
+				args.add(LuaType.fromStr(arg.name));
+			addStaticFunction(method.name, LuaType.fromStr(method.returnType.name), args);
 		}
 	}
 
 	/**
 	 * Adds a function from a java object to lua as a global.
 	 */
-	fun addObjectFunction(
+	fun addGlobalFunction(
 		name: String, rtnType: LuaType = LuaType.Void, argTypes: List<LuaType>? = null
 	)
 	{
 		val sig = generateSignature(rtnType, argTypes);
 		val argc = argTypes?.size ?: 0;
-		addFunction(name, sig, typeToInt(rtnType), argc);
+		addFunction(name, sig, LuaType.toInt(rtnType), argc);
+	}
+
+	/**
+	 * Adds a static function from a java class to lua as a global.
+	 */
+	fun addStaticFunction(
+		name: String, rtnType: LuaType = LuaType.Void, argTypes: List<LuaType>? = null
+	)
+	{
+		val sig = generateSignature(rtnType, argTypes);
+		val argc = argTypes?.size ?: 0;
+		addFunctions(name, sig, LuaType.toInt(rtnType), argc);
 	}
 
 	/**
@@ -176,7 +210,7 @@ class FunctionBuilder
 	{
 		val sig = generateSignature(rtnType, argTypes);
 		val argc = argTypes?.size ?: 0;
-		addFunctionc(clazz, name, sig, typeToInt(rtnType), argc);
+		addFunctionc(clazz, name, sig, LuaType.toInt(rtnType), argc);
 	}
 
 	/**
@@ -195,17 +229,13 @@ class FunctionBuilder
 	external fun popTable();
 
 	private external fun addFunction(name: String, funSignature: String, rtnType: Int, argc: Int);
+	private external fun addFunctions(name: String, funSignature: String, rtnType: Int, argc: Int);
 
 	private external fun addFunctionc(
 		clazz: Class<*>, name: String, funSignature: String, rtnType: Int, argc: Int
 	);
 
 	private fun generateSignature(rtnType: LuaType, argTypes: List<LuaType>?): String
-	{
-		return generateSignature(typeToStr(rtnType), argTypes);
-	}
-
-	private fun generateSignature(rtnType: String, argTypes: List<LuaType>?): String
 	{
 		var funSignature = "(";
 		if (argTypes != null)
@@ -214,62 +244,14 @@ class FunctionBuilder
 			{
 				if (type is LuaType.VoidT) throw FunctionBuilderError("Void is not a valid argument type");
 				if (type is LuaType.BuilderT) throw FunctionBuilderError("Builder is not a valid argument type");
-				funSignature += typeToStr(type);
+				funSignature += LuaType.toStr(type);
 			}
 		}
 		funSignature += ')';
-		funSignature += rtnType;
+		funSignature += LuaType.toStr(rtnType);
 
 		funSignature = funSignature.replace('.', '/');
 
 		return funSignature;
-	}
-
-	private fun typeToStr(type: LuaType): String
-	{
-		return when (type)
-		{
-			is LuaType.DoubleT   -> "D";
-			is LuaType.FloatT    -> "F";
-			is LuaType.IntT      -> "I";
-			is LuaType.BoolT     -> "Z";
-			is LuaType.VoidT     -> "V";
-			is LuaType.BuilderT  -> "V";
-			is LuaType.StringT   -> "Ljava/lang/String;";
-			is LuaType.CallbackT -> "L${LuaCallback::class.java.name.replace('.', '/')};";
-			else                 -> "L${type.clazz.name.replace('.', '/')};";
-		}
-	}
-
-	private fun typeToInt(type: LuaType): Int
-	{
-		return when (type)
-		{
-			is LuaType.DoubleT   -> LuaTypeId.Number.id;
-			is LuaType.FloatT    -> LuaTypeId.Float.id;
-			is LuaType.IntT      -> LuaTypeId.Int.id;
-			is LuaType.BoolT     -> LuaTypeId.Bool.id;
-			is LuaType.VoidT     -> LuaTypeId.Nil.id;
-			is LuaType.StringT   -> LuaTypeId.String.id;
-			is LuaType.Object    -> LuaTypeId.Table.id;
-			is LuaType.BuilderT  -> LuaTypeId.Builder.id;
-			is LuaType.CallbackT -> LuaTypeId.Function.id;
-			else                 -> LuaTypeId.Nil.id;
-		}
-	}
-
-	private fun stringToLuaType(type: String): LuaType
-	{
-		return when (type)
-		{
-			"int"                                            -> LuaType.Int
-			"double"                                         -> LuaType.Double
-			"float"                                          -> LuaType.Float
-			"boolean"                                        -> LuaType.Bool
-			"java.lang.string"                               -> LuaType.String
-			"void"                                           -> LuaType.Void
-			"com.minerkid08.dynamicopmodeloader.LuaCallback" -> LuaType.Callback
-			else                                             -> LuaType.Object(Class.forName(type))
-		}
 	}
 }

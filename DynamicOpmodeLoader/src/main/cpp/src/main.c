@@ -9,6 +9,7 @@
 #include <string.h>
 
 #include "dynList.h"
+#include "error.h"
 #include "global.h"
 #include "utils.h"
 #include "vararg.h"
@@ -56,7 +57,7 @@ int handleStackTrace(lua_State* l)
 			stackTrace = malloc(len + 1);
 		}
 	}
-  strcpy(stackTrace, msg);
+	strcpy(stackTrace, msg);
 
 	return 1;
 }
@@ -92,15 +93,6 @@ int addOpmode(lua_State* l)
 	return 0;
 }
 
-JNIEXPORT int JNICALL JNI_OnLoad(JavaVM* vm, void* reserved)
-{
-	opmodes = dynList_new(0, sizeof(Opmode));
-	dynList_reserve((void**)&opmodes, 5);
-
-	fbInit();
-	return 0x000a0000; // JNI_VERSION_10;
-}
-
 JNIEXPORT void JNICALL close(JNIEnv* env2, jobject this)
 {
 	env = env2;
@@ -121,14 +113,21 @@ JNIEXPORT void JNICALL close(JNIEnv* env2, jobject this)
 }
 
 char inited = 0;
-JNIEXPORT void JNICALL init2(JNIEnv* env2, jobject this, jobject stdlib)
+JNIEXPORT void JNICALL init2(JNIEnv* env2, jobject this)
 {
 	env = env2;
-	initUtils(stdlib);
+	initUtils();
 	initCallback();
 
 	if (l != 0)
 		close(env2, this);
+	else {
+        opmodes = dynList_new(0, sizeof(Opmode));
+        dynList_reserve((void**)&opmodes, 5);
+
+        fbInit();
+        initError();
+    }
 
 	print("lua_state initalising");
 
@@ -160,7 +159,7 @@ JNIEXPORT jobjectArray JNICALL init(JNIEnv* env2, jobject this)
 {
 	env = env2;
 
-  lua_pushcfunction(l, handleStackTrace);
+	lua_pushcfunction(l, handleStackTrace);
 
 #ifndef ANDROID
 	if (luaL_loadfile(l, "lua/init.lua"))
@@ -172,12 +171,11 @@ JNIEXPORT jobjectArray JNICALL init(JNIEnv* env2, jobject this)
 		return NULL;
 	}
 
-  if(lua_pcall(l, 0, 0, lua_gettop(l) - 1))
+	if (lua_pcall(l, 0, 0, lua_gettop(l) - 1))
 	{
 		luaErr(lua_tostring(l, -1));
 		return NULL;
 	}
-  
 
 	int opmodeCount = dynList_size(opmodes);
 
@@ -218,7 +216,7 @@ JNIEXPORT void JNICALL loadOpmode(JNIEnv* env2, jobject this, jstring opmodeName
 	}
 
 	lua_settop(l, 0);
-  lua_pushcfunction(l, handleStackTrace);
+	lua_pushcfunction(l, handleStackTrace);
 	lua_getglobal(l, "data");
 	lua_geti(l, -1, currentOpmode);
 	lua_getfield(l, -1, "init");
@@ -249,20 +247,30 @@ JNIEXPORT void JNICALL start(JNIEnv* env2, jobject this, int recognitionId)
 	lua_settop(l, 3);
 }
 
-JNIEXPORT void JNICALL update(JNIEnv* env2, jobject this, double deltaTime, double elapsedTime)
+JNIEXPORT char JNICALL update(JNIEnv* env2, jobject this, double deltaTime, double elapsedTime)
 {
 	env = env2;
 	lua_getfield(l, -1, "update");
+  char b;
 	if (lua_type(l, -1) == LUA_TFUNCTION)
 	{
 		lua_pushnumber(l, deltaTime);
 		lua_pushnumber(l, elapsedTime);
-		if (lua_pcall(l, 2, 0, 1))
+		if (lua_pcall(l, 2, 1, 1))
 		{
 			luaErr(lua_tostring(l, -1));
+      return 1;
 		}
+    if(lua_type(l, -1) != LUA_TBOOLEAN)
+    {
+      luaErr("update must return a bool");
+      return 1;
+    }
+
+    b = lua_toboolean(l, -1);
 	}
 	lua_settop(l, 3);
+  return b;
 }
 
 JNIEXPORT void JNICALL callFun(JNIEnv* env2, jobject this, jstring name, jobjectArray args)

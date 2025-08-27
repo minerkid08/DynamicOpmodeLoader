@@ -5,67 +5,50 @@
 
 static jobject obj = 0;
 static jmethodID printId;
-static jmethodID luaErrId;
-static jmethodID cpErrId;
-static jmethodID fbErrId;
-static jmethodID opErrId;
 static jmethodID getClassId;
-static char* buf;
+static char buf[256];
+
+void initUtils()
+{
+	if (obj == 0)
+	{
+		jclass class = (*env)->FindClass(env, "com/minerkid08/dynamicopmodeloader/LuaStdlib");
+		if ((*env)->ExceptionCheck(env))
+		{
+			(*env)->ExceptionDescribe(env);
+			(*env)->ExceptionClear(env);
+		}
+		printId = (*env)->GetStaticMethodID(env, class, "print", "(Ljava/lang/String;)V");
+		if ((*env)->ExceptionCheck(env))
+		{
+			(*env)->ExceptionDescribe(env);
+			(*env)->ExceptionClear(env);
+		}
+		jclass c = (*env)->GetObjectClass(env, class);
+		if ((*env)->ExceptionCheck(env))
+		{
+			(*env)->ExceptionDescribe(env);
+			(*env)->ExceptionClear(env);
+		}
+		getClassId = (*env)->GetMethodID(env, c, "getSimpleName", "()Ljava/lang/String;");
+		if ((*env)->ExceptionCheck(env))
+		{
+			(*env)->ExceptionDescribe(env);
+			(*env)->ExceptionClear(env);
+		}
+		obj = (*env)->NewGlobalRef(env, class);
+	}
+}
 
 void print(const char* fmt, ...)
 {
 	va_list va;
 	va_start(va, fmt);
 	vsnprintf(buf, 256, fmt, va);
-	jstring j = (*env)->NewStringUTF(env, buf);
-	(*env)->CallVoidMethod(env, obj, printId, j);
-}
 
-void luaErr(const char* msg)
-{
-	jstring j = (*env)->NewStringUTF(env, msg);
-	(*env)->CallVoidMethod(env, obj, luaErrId, j);
-}
+	jstring str = (*env)->NewStringUTF(env, buf);
 
-void cpErr(const char* msg)
-{
-	jstring j = (*env)->NewStringUTF(env, msg);
-	(*env)->CallVoidMethod(env, obj, cpErrId, j);
-}
-
-void fbErr(const char* fmt, ...)
-{
-	va_list va;
-	va_start(va, fmt);
-	vsnprintf(buf, 256, fmt, va);
-	jstring j = (*env)->NewStringUTF(env, buf);
-	(*env)->CallVoidMethod(env, obj, fbErrId, j);
-}
-
-void opErr(const char* fmt, ...)
-{
-	va_list va;
-	va_start(va, fmt);
-	vsnprintf(buf, 256, fmt, va);
-	jstring j = (*env)->NewStringUTF(env, buf);
-	(*env)->CallVoidMethod(env, obj, opErrId, j);
-}
-
-void initUtils(jobject object)
-{
-	if (obj == 0)
-	{
-		jclass class = (*env)->GetObjectClass(env, object);
-		printId = (*env)->GetMethodID(env, class, "print", "(Ljava/lang/String;)V");
-		luaErrId = (*env)->GetMethodID(env, class, "luaErr", "(Ljava/lang/String;)V");
-		cpErrId = (*env)->GetMethodID(env, class, "cpErr", "(Ljava/lang/String;)V");
-		fbErrId = (*env)->GetMethodID(env, class, "fbErr", "(Ljava/lang/String;)V");
-		opErrId = (*env)->GetMethodID(env, class, "opmodeErr", "(Ljava/lang/String;)V");
-		jclass c = (*env)->GetObjectClass(env, class);
-		getClassId = (*env)->GetMethodID(env, c, "getSimpleName", "()Ljava/lang/String;");
-		buf = malloc(256);
-		obj = (*env)->NewGlobalRef(env, object);
-	}
+	(*env)->CallStaticVoidMethod(env, obj, printId, str);
 }
 
 jstring getClassName(jclass class)

@@ -37,10 +37,10 @@ int offset = 0;
 
 const char* prefix;
 
-JNIEXPORT void JNICALL unpack(JNIEnv* env2, jobject this, jobject stdlib, jstring path)
+JNIEXPORT void JNICALL unpack(JNIEnv* env2, jobject this, jstring path)
 {
   env = env2;
-	initUtils(stdlib);
+	initUtils();
 	prefix = (*env)->GetStringUTFChars(env, path, 0);
 	char* filePath = malloc(strlen(prefix) + 10);
 	strcpy(filePath, prefix);
