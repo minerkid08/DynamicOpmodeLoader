@@ -7,4 +7,9 @@ object LuaStdlib
 	{
 		println(string);
 	}
+
+	fun log(tag: String, value: String)
+	{
+		println("%10s | %s".format(tag, value));
+	}
 }

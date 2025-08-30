@@ -137,6 +137,8 @@ int main(int argc, const char** argv)
 		unsigned long long len = ftell(file);
 		fseek(file, 0, SEEK_SET);
 
+    printf("sending file of length %llx\n", len);
+
 		void* data = malloc(len);
 		fread(data, 1, len, file);
 		fclose(file);

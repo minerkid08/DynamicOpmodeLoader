@@ -83,6 +83,7 @@ class Main
 	@Test
 	fun fileServer()
 	{
+		FileServer.path = "./upload";
 		FileServer.start();
 		while (true);
 	}

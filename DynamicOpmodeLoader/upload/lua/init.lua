@@ -21,10 +21,9 @@ local c3 = 0;
 addOpmode({
   name = ":)",
   init = function()
-        local e = getE();
+    local e = getE();
     local f = e:printThing("heh")
         :add(1, 2);
-    print(tostring(e));
     print(tostring(f));
     --e:doThing(a);
   end,
