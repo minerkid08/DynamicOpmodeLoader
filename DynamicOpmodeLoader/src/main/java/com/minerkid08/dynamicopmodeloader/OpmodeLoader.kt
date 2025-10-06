@@ -44,12 +44,13 @@ class OpmodeLoader
 	}
 
 	/**
-	 * Closes the lua instance and cleans up all references to jobjects.
+	 * Closes the lua instance and cleans up all jobject references.
 	 */
 	external fun close();
 
 	/**
 	 * Loads an opmode to be run and calls init on that opmode.
+	 * @param name the name of the opmode to load.
 	 */
 	external fun loadOpmode(name: String);
 	

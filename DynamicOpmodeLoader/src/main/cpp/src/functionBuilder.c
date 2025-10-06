@@ -21,8 +21,8 @@ static char** tableNames;
 void fbInit()
 {
 	initClassFunctions();
-  initGlobalFunctions();
-  initStaticFunctions();
+	initGlobalFunctions();
+	initStaticFunctions();
 	tableNames = dynList_new(0, sizeof(char*));
 	dynList_reserve((void**)&tableNames, 5);
 }
@@ -31,14 +31,14 @@ void fbInitLua()
 {
 	initClassFunctionsLua();
 	initGlobalFunctionsLua();
-  initStaticFunctionsLua();
+	initStaticFunctionsLua();
 }
 
 void fbReset()
 {
-  resetClassFunctions();
-  resetGlobalFunctions();
-  resetStaticFunctions();
+	resetClassFunctions();
+	resetGlobalFunctions();
+	resetStaticFunctions();
 	int s = dynList_size(tableNames);
 	for (int i = 0; i < s; i++)
 		free(tableNames[i]);
@@ -95,8 +95,8 @@ jvalue* checkArgs(lua_State* l, Function* fun, int s)
 			char type2 = fun->argTypes[i];
 			if (type2 == TINT || type2 == TFLOAT)
 				type2 = LUA_TNUMBER;
-            if (type2 == LUA_TNIL)
-                type2 = LUA_TTABLE;
+			if (type2 == LUA_TNIL)
+				type2 = LUA_TTABLE;
 
 			if (type != type2)
 			{
@@ -193,6 +193,8 @@ int call(lua_State* l, Function* fun, jobject obj, jvalue* args)
 	}
 	case LUA_TTABLE: {
 		jobject res = (*env)->CallObjectMethodA(env, obj, fun->funId, args);
+		if ((*env)->IsSameObject(env, res, NULL))
+			luaL_error(l, "attempted to return a null object\n");
 		jstring str = getClassName((*env)->GetObjectClass(env, res));
 		const char* s = (*env)->GetStringUTFChars(env, str, NULL);
 		free(args);
@@ -271,7 +273,7 @@ int callStatic(lua_State* l, Function* fun, jclass obj, jvalue* args)
 		return 1;
 	}
 	case LUA_TTABLE: {
-		jobject res = (*env)->CallObjectMethodA(env, obj, fun->funId, args);
+		jobject res = (*env)->CallStaticObjectMethodA(env, obj, fun->funId, args);
 		jstring str = getClassName((*env)->GetObjectClass(env, res));
 		const char* s = (*env)->GetStringUTFChars(env, str, NULL);
 		free(args);
@@ -301,4 +303,3 @@ int callStatic(lua_State* l, Function* fun, jclass obj, jvalue* args)
 	}
 	return 0;
 }
-

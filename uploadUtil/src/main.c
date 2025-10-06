@@ -12,9 +12,9 @@
 
 #ifdef _WIN64
 #include <winsock.h>
+#include <winsock2.h>
 
 #include <windows.h>
-#include <winsock2.h>
 #include <ws2tcpip.h>
 #else
 #include <arpa/inet.h>
@@ -144,7 +144,7 @@ int main(int argc, const char** argv)
 		fclose(file);
 
 #ifdef __WIN64
-		int res = send(sock, &len, 8, 0);
+		int res = send(sock, (const char*)&len, 8, 0);
 		if (res == SOCKET_ERROR)
 		{
 			printf("send failed with error: %d\n", WSAGetLastError());
