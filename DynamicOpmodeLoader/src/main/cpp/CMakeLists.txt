@@ -49,6 +49,7 @@ add_library(
         src/unpack.c
         src/vararg.c
         src/error.c
+        src/lib.c
 )
 
 target_include_directories(dynamicopmodeloader PRIVATE ./ ./include)

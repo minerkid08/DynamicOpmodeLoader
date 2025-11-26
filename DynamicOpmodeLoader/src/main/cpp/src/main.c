@@ -1,5 +1,6 @@
 #include "callback.h"
 #include "functionBuilder.h"
+#include "lib.h"
 #include "lua/lauxlib.h"
 #include "lua/lua.h"
 #include "lua/lualib.h"
@@ -121,13 +122,14 @@ JNIEXPORT void JNICALL init2(JNIEnv* env2, jobject this)
 
 	if (l != 0)
 		close(env2, this);
-	else {
-        opmodes = dynList_new(0, sizeof(Opmode));
-        dynList_reserve((void**)&opmodes, 5);
+	else
+	{
+		opmodes = dynList_new(0, sizeof(Opmode));
+		dynList_reserve((void**)&opmodes, 5);
 
-        fbInit();
-        initError();
-    }
+		fbInit();
+		initError();
+	}
 
 	print("lua_state initalising");
 
@@ -135,10 +137,12 @@ JNIEXPORT void JNICALL init2(JNIEnv* env2, jobject this)
 
 	luaL_openlibs(l);
 
+	addFunc(l);
+
 #ifndef ANDROID
 	if (luaL_dostring(l, "package.path = \"./lua/?.lua;./lua/?/init.lua\""))
 #else
-	if (luaL_dostring(l, "package.path = \"/sdcard/lua/?.lua\;/sdcard/lua/?/init.lua""))
+	if (luaL_dostring(l, "package.path = \"/sdcard/lua/?.lua\;/sdcard/lua/?/init.lua\""))
 #endif
 	{
 		cpErr(lua_tostring(l, -1));
@@ -251,7 +255,7 @@ JNIEXPORT char JNICALL update(JNIEnv* env2, jobject this, double deltaTime, doub
 {
 	env = env2;
 	lua_getfield(l, -1, "update");
-  char b;
+	char b;
 	if (lua_type(l, -1) == LUA_TFUNCTION)
 	{
 		lua_pushnumber(l, deltaTime);
@@ -259,18 +263,18 @@ JNIEXPORT char JNICALL update(JNIEnv* env2, jobject this, double deltaTime, doub
 		if (lua_pcall(l, 2, 1, 1))
 		{
 			luaErr(lua_tostring(l, -1));
-      return 1;
+			return 1;
 		}
-    if(lua_type(l, -1) != LUA_TBOOLEAN)
-    {
-      luaErr("update must return a bool");
-      return 1;
-    }
+		if (lua_type(l, -1) != LUA_TBOOLEAN)
+		{
+			luaErr("update must return a bool");
+			return 1;
+		}
 
-    b = lua_toboolean(l, -1);
+		b = lua_toboolean(l, -1);
 	}
 	lua_settop(l, 3);
-  return b;
+	return b;
 }
 
 JNIEXPORT void JNICALL callFun(JNIEnv* env2, jobject this, jstring name, jobjectArray args)
