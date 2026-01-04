@@ -20,12 +20,16 @@ end
 local c3 = 0;
 addOpmode({
   name = ":)",
-  init = function()
+    init = function()
+    local files = io.list("/home/minerkid08");
+    for k, v in ipairs(files) do
+        print('\'' .. v.name .. "\', " .. tostring(v.file));
+    end
         local e = getE();
     local f = e:printThing("heh")
         :add(1, 2);
     print(tostring(e));
-    print(tostring(f));
+        print(tostring(f));
     --e:doThing(a);
   end,
   update = function()

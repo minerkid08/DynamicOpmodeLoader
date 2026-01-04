@@ -126,10 +126,11 @@ jvalue* checkArgs(lua_State* l, Function* fun, int s)
 			case LUA_TBOOLEAN:
 				args[i].z = lua_toboolean(l, i + 2 + s);
 				break;
-			case LUA_TSTRING:
+			case LUA_TSTRING: {
 				const char* str = lua_tostring(l, i + 2 + s);
 				args[i].l = (*env)->NewStringUTF(env, str);
 				break;
+			}
 			case LUA_TTABLE:
 				lua_getfield(l, i + 2 + s, "ref");
 				args[i].l = lua_touserdata(l, -1);
@@ -144,47 +145,61 @@ jvalue* checkArgs(lua_State* l, Function* fun, int s)
 	return args;
 }
 
+#define errorCheck()                                                                                                   \
+	if ((*env)->ExceptionCheck(env))                                                                                   \
+	{                                                                                                                  \
+		free(args);                                                                                                    \
+		luaL_error(l, "e");                                                                                            \
+	}
+
 int call(lua_State* l, Function* fun, jobject obj, jvalue* args)
 {
 	switch (fun->rtnType)
 	{
 	case LUA_TNIL: {
 		(*env)->CallVoidMethodA(env, obj, fun->funId, args);
+		errorCheck();
 		free(args);
 		return 0;
 	}
 	case TBUILDER: {
 		(*env)->CallVoidMethodA(env, obj, fun->funId, args);
+		errorCheck();
 		free(args);
 		lua_pushvalue(l, 2);
 		return 1;
 	}
 	case LUA_TNUMBER: {
 		double rtn = (*env)->CallDoubleMethodA(env, obj, fun->funId, args);
+		errorCheck();
 		lua_pushnumber(l, rtn);
 		free(args);
 		return 1;
 	}
 	case TFLOAT: {
 		float rtn = (*env)->CallFloatMethodA(env, obj, fun->funId, args);
+		errorCheck();
 		lua_pushnumber(l, rtn);
 		free(args);
 		return 1;
 	}
 	case TINT: {
 		int rtn = (*env)->CallIntMethodA(env, obj, fun->funId, args);
+		errorCheck();
 		lua_pushnumber(l, rtn);
 		free(args);
 		return 1;
 	}
 	case LUA_TBOOLEAN: {
 		char rtn = (*env)->CallBooleanMethodA(env, obj, fun->funId, args);
+		errorCheck();
 		lua_pushboolean(l, rtn);
 		free(args);
 		return 1;
 	}
 	case LUA_TSTRING: {
 		jstring rtn = (*env)->CallObjectMethodA(env, obj, fun->funId, args);
+		errorCheck();
 		const char* str = (*env)->GetStringUTFChars(env, rtn, NULL);
 		lua_pushstring(l, str);
 		(*env)->ReleaseStringUTFChars(env, rtn, str);
@@ -193,6 +208,7 @@ int call(lua_State* l, Function* fun, jobject obj, jvalue* args)
 	}
 	case LUA_TTABLE: {
 		jobject res = (*env)->CallObjectMethodA(env, obj, fun->funId, args);
+		errorCheck();
 		if ((*env)->IsSameObject(env, res, NULL))
 			luaL_error(l, "attempted to return a null object\n");
 		jstring str = getClassName((*env)->GetObjectClass(env, res));
@@ -231,41 +247,48 @@ int callStatic(lua_State* l, Function* fun, jclass obj, jvalue* args)
 	{
 	case LUA_TNIL: {
 		(*env)->CallStaticVoidMethodA(env, obj, fun->funId, args);
+		errorCheck();
 		free(args);
 		return 0;
 	}
 	case TBUILDER: {
 		(*env)->CallStaticVoidMethodA(env, obj, fun->funId, args);
+		errorCheck();
 		free(args);
 		lua_pushvalue(l, 2);
 		return 1;
 	}
 	case LUA_TNUMBER: {
 		double rtn = (*env)->CallStaticDoubleMethodA(env, obj, fun->funId, args);
+		errorCheck();
 		lua_pushnumber(l, rtn);
 		free(args);
 		return 1;
 	}
 	case TFLOAT: {
 		float rtn = (*env)->CallStaticFloatMethodA(env, obj, fun->funId, args);
+		errorCheck();
 		lua_pushnumber(l, rtn);
 		free(args);
 		return 1;
 	}
 	case TINT: {
 		int rtn = (*env)->CallStaticIntMethodA(env, obj, fun->funId, args);
+		errorCheck();
 		lua_pushnumber(l, rtn);
 		free(args);
 		return 1;
 	}
 	case LUA_TBOOLEAN: {
 		char rtn = (*env)->CallStaticBooleanMethodA(env, obj, fun->funId, args);
+		errorCheck();
 		lua_pushboolean(l, rtn);
 		free(args);
 		return 1;
 	}
 	case LUA_TSTRING: {
 		jstring rtn = (*env)->CallStaticObjectMethodA(env, obj, fun->funId, args);
+		errorCheck();
 		const char* str = (*env)->GetStringUTFChars(env, rtn, NULL);
 		lua_pushstring(l, str);
 		(*env)->ReleaseStringUTFChars(env, rtn, str);
@@ -274,6 +297,7 @@ int callStatic(lua_State* l, Function* fun, jclass obj, jvalue* args)
 	}
 	case LUA_TTABLE: {
 		jobject res = (*env)->CallStaticObjectMethodA(env, obj, fun->funId, args);
+		errorCheck();
 		jstring str = getClassName((*env)->GetObjectClass(env, res));
 		const char* s = (*env)->GetStringUTFChars(env, str, NULL);
 		free(args);

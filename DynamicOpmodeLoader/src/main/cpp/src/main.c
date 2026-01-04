@@ -177,6 +177,8 @@ JNIEXPORT jobjectArray JNICALL init(JNIEnv* env2, jobject this)
 
 	if (lua_pcall(l, 0, 0, lua_gettop(l) - 1))
 	{
+		if ((*env)->ExceptionCheck(env))
+			return NULL;
 		luaErr(lua_tostring(l, -1));
 		return NULL;
 	}
@@ -228,6 +230,8 @@ JNIEXPORT void JNICALL loadOpmode(JNIEnv* env2, jobject this, jstring opmodeName
 	{
 		if (lua_pcall(l, 0, 0, 1))
 		{
+			if ((*env)->ExceptionCheck(env))
+				return;
 			luaErr(lua_tostring(l, -1));
 			return;
 		}
@@ -262,6 +266,8 @@ JNIEXPORT char JNICALL update(JNIEnv* env2, jobject this, double deltaTime, doub
 		lua_pushnumber(l, elapsedTime);
 		if (lua_pcall(l, 2, 1, 1))
 		{
+			if ((*env)->ExceptionCheck(env))
+				return 1;
 			luaErr(lua_tostring(l, -1));
 			return 1;
 		}
@@ -287,7 +293,11 @@ JNIEXPORT void JNICALL callFun(JNIEnv* env2, jobject this, jstring name, jobject
 		int len = (*env)->GetArrayLength(env, args);
 		pushArgs(args, len);
 		if (lua_pcall(l, len, 0, 1))
+		{
+			if ((*env)->ExceptionCheck(env))
+				return;
 			luaErr(lua_tostring(l, -1));
+		}
 	}
 	else
 		opErr("undefined function: \'%s\'", nameStr);
@@ -304,7 +314,11 @@ JNIEXPORT void JNICALL callOpmodeFun(JNIEnv* env2, jobject this, jstring name, j
 		int len = (*env)->GetArrayLength(env, args);
 		pushArgs(args, len);
 		if (lua_pcall(l, len, 0, 0))
+		{
+			if ((*env)->ExceptionCheck(env))
+				return;
 			luaErr(lua_tostring(l, -1));
+		}
 	}
 	else
 		opErr("undefined function: \'%s\'", nameStr);
