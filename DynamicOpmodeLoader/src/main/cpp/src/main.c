@@ -4,6 +4,7 @@
 #include "lua/lauxlib.h"
 #include "lua/lua.h"
 #include "lua/lualib.h"
+#include "opmodeManager.h"
 
 #include <jni.h>
 #include <stdlib.h>
@@ -15,12 +16,13 @@
 #include "utils.h"
 #include "vararg.h"
 
-#define init Java_com_minerkid08_dynamicopmodeloader_OpmodeLoader_internalInit
-#define init2 Java_com_minerkid08_dynamicopmodeloader_OpmodeLoader_internalInit2
+#define init Java_com_minerkid08_dynamicopmodeloader_OpmodeLoader_init
+#define internalInit Java_com_minerkid08_dynamicopmodeloader_OpmodeLoader_internalInit
 #define close Java_com_minerkid08_dynamicopmodeloader_OpmodeLoader_close
 #define loadOpmode Java_com_minerkid08_dynamicopmodeloader_OpmodeLoader_loadOpmode
 #define start Java_com_minerkid08_dynamicopmodeloader_OpmodeLoader_start
 #define update Java_com_minerkid08_dynamicopmodeloader_OpmodeLoader_update
+#define stop Java_com_minerkid08_dynamicopmodeloader_OpmodeLoader_stop
 #define callFun Java_com_minerkid08_dynamicopmodeloader_OpmodeLoader_callFun
 #define callOpmodeFun Java_com_minerkid08_dynamicopmodeloader_OpmodeLoader_callOpmodeFun
 
@@ -77,13 +79,56 @@ int addOpmode(lua_State* l)
 	opmode->id = opmodeId;
 
 	lua_getfield(l, -1, "name");
+	if (lua_type(l, -1) != LUA_TSTRING)
+		luaL_error(l, "wrong type for opmode name field");
 	const char* name = lua_tostring(l, -1);
 	int stringLen = strlen(name);
 
 	opmode->name = malloc(stringLen + 1);
 	strcpy(opmode->name, name);
 	opmode->name[stringLen] = 0;
+	lua_pop(l, 1);
 
+	lua_getfield(l, -1, "type");
+	if (lua_type(l, -1) != LUA_TNUMBER)
+		luaL_error(l, "wrong type for opmode type field");
+
+	int type = lua_tointeger(l, -1);
+	if (type != 0 && type != 1)
+		luaL_error(l, "invalid value for type field");
+	opmode->type = type;
+	lua_pop(l, 1);
+
+	lua_getfield(l, -1, "group");
+	if (lua_type(l, -1) != LUA_TNIL)
+	{
+		if (lua_type(l, -1) != LUA_TSTRING)
+			luaL_error(l, "wrong type for opmode group field");
+		const char* group = lua_tostring(l, -1);
+		int stringLen = strlen(group);
+
+		opmode->group = malloc(stringLen + 1);
+		strcpy(opmode->group, group);
+		opmode->group[stringLen] = 0;
+	}
+	else
+		opmode->group = 0;
+	lua_pop(l, 1);
+
+	lua_getfield(l, -1, "order");
+	if (lua_type(l, -1) != LUA_TNIL)
+	{
+		if (lua_type(l, -1) != LUA_TSTRING)
+			luaL_error(l, "wrong type for opmode order field");
+		const char* order = lua_tostring(l, -1);
+		int stringLen = strlen(order);
+
+		opmode->order = malloc(stringLen + 1);
+		strcpy(opmode->order, order);
+		opmode->order[stringLen] = 0;
+	}
+	else
+		opmode->order = 0;
 	lua_pop(l, 1);
 
 	lua_getglobal(l, "data");
@@ -114,7 +159,7 @@ JNIEXPORT void JNICALL close(JNIEnv* env2, jobject this)
 }
 
 char inited = 0;
-JNIEXPORT void JNICALL init2(JNIEnv* env2, jobject this)
+JNIEXPORT void JNICALL internalInit(JNIEnv* env2, jobject this)
 {
 	env = env2;
 	initUtils();
@@ -183,20 +228,7 @@ JNIEXPORT jobjectArray JNICALL init(JNIEnv* env2, jobject this)
 		return NULL;
 	}
 
-	int opmodeCount = dynList_size(opmodes);
-
-	jobjectArray arr = (*env)->NewObjectArray(env, opmodeCount, (*env)->FindClass(env, "java/lang/String"), NULL);
-
-	print("loaded %d opmodes\n", opmodeCount);
-
-	for (int i = 0; i < opmodeCount; i++)
-	{
-		Opmode* opmode = opmodes + i;
-		jstring str = (*env)->NewStringUTF(env, opmode->name);
-		(*env)->SetObjectArrayElement(env, arr, i, str);
-		(*env)->DeleteLocalRef(env, str);
-	}
-	return arr;
+	return genOpmodeArray(env, opmodes);
 }
 
 JNIEXPORT void JNICALL loadOpmode(JNIEnv* env2, jobject this, jstring opmodeName)
@@ -281,6 +313,20 @@ JNIEXPORT char JNICALL update(JNIEnv* env2, jobject this, double deltaTime, doub
 	}
 	lua_settop(l, 3);
 	return b;
+}
+
+JNIEXPORT void JNICALL stop(JNIEnv* env2, jobject this)
+{
+	env = env2;
+	lua_getfield(l, -1, "stop");
+	if (lua_type(l, -1) == LUA_TFUNCTION)
+	{
+		if (lua_pcall(l, 0, 0, 1))
+		{
+			luaErr(lua_tostring(l, -1));
+		}
+	}
+	lua_settop(l, 3);
 }
 
 JNIEXPORT void JNICALL callFun(JNIEnv* env2, jobject this, jstring name, jobjectArray args)

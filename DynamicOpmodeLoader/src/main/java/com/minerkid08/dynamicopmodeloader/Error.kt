@@ -12,9 +12,9 @@ class LuaError(message: String) : RuntimeException()
 	{
 		try
 		{
-			var i = message.indexOf(':');
-			i = message.indexOf(':', i + 1) + 2;
-			msg = message.substring(i, message.indexOf('\n'));
+			var ind = message.indexOf(':');
+			ind = message.indexOf(':', ind + 1) + 2;
+			msg = message.substring(ind, message.indexOf('\n'));
 
 			val lines = message.split('\n').drop(2);
 			trace = Array(lines.size, { i ->

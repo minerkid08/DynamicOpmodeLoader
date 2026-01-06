@@ -228,6 +228,12 @@ class FunctionBuilder
 	 */
 	external fun popTable();
 
+	external fun pushValuei(key: String, value: Int);
+	external fun pushValued(key: String, value: Double);
+	external fun pushValueb(key: String, value: Boolean);
+	external fun pushValues(key: String, value: String);
+	external fun <T> pushValueo(key: String, value: T);
+
 	private external fun addFunction(name: String, funSignature: String, rtnType: Int, argc: Int);
 	private external fun addFunctions(name: String, funSignature: String, rtnType: Int, argc: Int);
 

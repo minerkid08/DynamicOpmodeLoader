@@ -1,10 +1,15 @@
 package com.minerkid08.dynamicopmodeloader
 
-class Opmode(val name: String, val type: Int, val group: String)
+class Opmode
 {
+	lateinit var name: String;
+	var type: Int = 0;
+	var group: String? = null;
+	var order: String? = null;
+
 	companion object
 	{
-		val Telop = 0;
-		val Auto = 1;
+		const val Telop = 0;
+		const val Auto = 1;
 	}
 }

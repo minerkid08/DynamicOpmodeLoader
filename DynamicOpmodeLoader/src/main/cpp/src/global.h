@@ -7,6 +7,9 @@ typedef struct
 {
 	int id;
 	char* name;
+  int type;
+  char* group;
+  char* order;
 } Opmode;
 
 extern int currentOpmode;

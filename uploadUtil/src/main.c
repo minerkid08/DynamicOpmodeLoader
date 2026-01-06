@@ -22,6 +22,10 @@
 #include <unistd.h>
 #endif
 
+int connectToSock(const char* ip);
+void sendData(int sock, void* data, int len);
+void closeSocket(int sock);
+
 int main(int argc, const char** argv)
 {
 	char shouldPack = 1;
@@ -32,11 +36,17 @@ int main(int argc, const char** argv)
 
 	for (int i = 1; i < argc; i++)
 	{
-    if (strcmp(argv[i], "-h") == 0)
-    {
-      printf("Ussage: pack <opts>\n  -s set directory to upload\n  -o set file to pack to\n  -nopack  dont pack files\n  -noupload do not upload pack file\n  -printFiles prints files that are packed\n  -printTree print internal representation of files\n");
-      return 0;
-    }
+		if (strcmp(argv[i], "-h") == 0)
+		{
+			printf("Ussage: pack <opts>\n"
+				   "   -s set directory to upload\n"
+				   "   -o set file to pack to\n"
+				   "   -nopack  dont pack files\n"
+				   "   -noupload do not upload pack file\n"
+				   "   -printFiles prints files that are packed\n"
+				   "   -printTree print internal representation of files\n");
+			return 0;
+		}
 		if (strcmp(argv[i], "-nopack") == 0)
 			shouldPack = 0;
 		if (strcmp(argv[i], "-noupload") == 0)
@@ -62,119 +72,22 @@ int main(int argc, const char** argv)
 
 	if (shouldUpload)
 	{
-#ifdef __WIN64
-		WSADATA wsaData;
-		SOCKET sock;
-		struct addrinfo* result;
-		struct addrinfo* ptr;
-		struct addrinfo hints;
-
-		if (WSAStartup(MAKEWORD(2, 2), &wsaData))
-		{
-			printf("wsastartup failed\n");
-			return 1;
-		}
-
-		ZeroMemory(&hints, sizeof(hints));
-		hints.ai_family = AF_UNSPEC;
-		hints.ai_socktype = SOCK_STREAM;
-		hints.ai_protocol = IPPROTO_TCP;
-
-		if (getaddrinfo(IP, "6969", &hints, &result))
-		{
-			printf("getaddrinfo failed\n");
-			return 1;
-		}
-
-		for (ptr = result; ptr != 0; ptr = ptr->ai_next)
-		{
-
-			sock = socket(ptr->ai_family, ptr->ai_socktype, ptr->ai_protocol);
-			if (sock == INVALID_SOCKET)
-			{
-				printf("socket failed with error: %ld\n", WSAGetLastError());
-				WSACleanup();
-				return 1;
-			}
-
-			// Connect to server.
-			int res = connect(sock, ptr->ai_addr, (int)ptr->ai_addrlen);
-			if (res == SOCKET_ERROR)
-			{
-				closesocket(sock);
-				sock = INVALID_SOCKET;
-				continue;
-			}
-			break;
-		}
-
-		freeaddrinfo(result);
-
-		if (sock == INVALID_SOCKET)
-		{
-			printf("Unable to connect to server!\n");
-			WSACleanup();
-			return 1;
-		}
-
-#else
-		int sock = socket(PF_INET, SOCK_STREAM, 0);
-
-		struct sockaddr_in addr = {0};
-		addr.sin_family = AF_INET;
-		addr.sin_port = htons(6969);
-    addr.sin_addr.s_addr = inet_addr(IP);
- 
-		if (connect(sock, (struct sockaddr*)&addr, sizeof(addr)))
-		{
-			printf("connetction error\n");
-			return 1;
-		}
-#endif
-
+		int sock = connectToSock(IP);
 		FILE* file = fopen(outFile, "rb");
 		fseek(file, 0, SEEK_END);
 		unsigned long long len = ftell(file);
 		fseek(file, 0, SEEK_SET);
 
-    printf("sending file of length %llx\n", len);
+		printf("sending file of length %llx\n", len);
 
 		void* data = malloc(len);
 		fread(data, 1, len, file);
 		fclose(file);
 
-#ifdef __WIN64
-		int res = send(sock, (const char*)&len, 8, 0);
-		if (res == SOCKET_ERROR)
-		{
-			printf("send failed with error: %d\n", WSAGetLastError());
-			closesocket(sock);
-			WSACleanup();
-			return 1;
-		}
-		res = send(sock, data, len, 0);
-		if (res == SOCKET_ERROR)
-		{
-			printf("send failed with error: %d\n", WSAGetLastError());
-			closesocket(sock);
-			WSACleanup();
-			return 1;
-		}
-		res = shutdown(sock, SD_SEND);
-		if (res == SOCKET_ERROR)
-		{
-			printf("shutdown failed with error: %d\n", WSAGetLastError());
-			closesocket(sock);
-			WSACleanup();
-			return 1;
-		}
-		closesocket(sock);
-		WSACleanup();
-#else
-		send(sock, &len, 8, 0);
-		send(sock, data, len, 0);
-		close(sock);
-#endif
+		sendData(sock, &len, 8);
+		sendData(sock, data, len);
+		closeSocket(sock);
+
 		free(data);
 	}
 }

@@ -1,0 +1,4 @@
+code: u8, len: u64, data
+
+1: write
+2: remove extra files

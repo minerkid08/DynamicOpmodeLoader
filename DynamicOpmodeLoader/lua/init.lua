@@ -17,20 +17,32 @@ end
 function b()
   c();
 end
+
 local c3 = 0;
+
+local Opmode = {
+  telop = 0,
+  auto = 1
+}
+
 addOpmode({
   name = ":)",
-    init = function()
-    local files = io.list("/home/minerkid08");
-    for k, v in ipairs(files) do
-        print('\'' .. v.name .. "\', " .. tostring(v.file));
-    end
-        local e = getE();
+  type = Opmode.telop,
+  group = "help",
+  order = "a",
+  init = function()
+    --local files = io.list("/home/minerkid08");
+    --for k, v in ipairs(files) do
+    --  print('\'' .. v.name .. "\', " .. tostring(v.file));
+    --end
+    local e = getE();
     local f = e:printThing("heh")
         :add(1, 2);
     print(tostring(e));
-        print(tostring(f));
-    --e:doThing(a);
+    print(tostring(f));
+    e:enumThing(enum.fwd);
+    e:enumThing(enum.bck);
+    e:doThing(a);
   end,
   update = function()
     c3 = c3 + 1;
@@ -38,5 +50,8 @@ addOpmode({
       return true;
     end
     return false;
+  end,
+  stop = function()
+    print("opmode stop");
   end
 })

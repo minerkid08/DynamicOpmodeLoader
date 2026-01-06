@@ -1,6 +1,7 @@
 #include "functionBuilder.h"
 #include "callback.h"
 #include "dynList.h"
+#include "error.h"
 #include "function.h"
 #include "global.h"
 #include "jni.h"
@@ -13,6 +14,12 @@
 
 #define pushTable Java_com_minerkid08_dynamicopmodeloader_FunctionBuilder_pushTable
 #define popTable Java_com_minerkid08_dynamicopmodeloader_FunctionBuilder_popTable
+
+#define pushValuei Java_com_minerkid08_dynamicopmodeloader_FunctionBuilder_pushValuei
+#define pushValued Java_com_minerkid08_dynamicopmodeloader_FunctionBuilder_pushValued
+#define pushValueb Java_com_minerkid08_dynamicopmodeloader_FunctionBuilder_pushValueb
+#define pushValues Java_com_minerkid08_dynamicopmodeloader_FunctionBuilder_pushValues
+#define pushValueo Java_com_minerkid08_dynamicopmodeloader_FunctionBuilder_pushValueo
 
 int tableLevel = 0;
 
@@ -74,6 +81,116 @@ JNIEXPORT void JNICALL popTable(JNIEnv* env, jobject this)
 		lua_setglobal(l, name);
 	print("poped table %d, %s", tableLevel, name);
 	free(name);
+}
+
+JNIEXPORT void JNICALL pushValuei(JNIEnv* env, jobject this, jstring name, int value)
+{
+	const char* c = (*env)->GetStringUTFChars(env, name, 0);
+
+	lua_pushinteger(l, value);
+	if (tableLevel > 0)
+		lua_setfield(l, -2, c);
+	else
+		lua_setglobal(l, c);
+
+	print("pushed int %s, %d", c, value);
+
+	(*env)->ReleaseStringUTFChars(env, name, c);
+}
+
+JNIEXPORT void JNICALL pushValued(JNIEnv* env, jobject this, jstring name, double value)
+{
+	const char* c = (*env)->GetStringUTFChars(env, name, 0);
+
+	lua_pushnumber(l, value);
+	if (tableLevel > 0)
+		lua_setfield(l, -2, c);
+	else
+		lua_setglobal(l, c);
+
+	print("pushed double %s, %f", c, value);
+
+	(*env)->ReleaseStringUTFChars(env, name, c);
+}
+
+JNIEXPORT void JNICALL pushValueb(JNIEnv* env, jobject this, jstring name, char value)
+{
+	const char* c = (*env)->GetStringUTFChars(env, name, 0);
+
+	lua_pushboolean(l, value);
+	if (tableLevel > 0)
+		lua_setfield(l, -2, c);
+	else
+		lua_setglobal(l, c);
+
+	print("pushed bool %s, %d", c, value);
+
+	(*env)->ReleaseStringUTFChars(env, name, c);
+}
+
+JNIEXPORT void JNICALL pushValues(JNIEnv* env, jobject this, jstring name, jstring value)
+{
+	const char* c = (*env)->GetStringUTFChars(env, name, 0);
+	const char* c2 = (*env)->GetStringUTFChars(env, value, 0);
+
+	lua_pushstring(l, c2);
+	if (tableLevel > 0)
+		lua_setfield(l, -2, c);
+	else
+		lua_setglobal(l, c);
+
+	print("pushed bool %s, %s", c, c2);
+
+	(*env)->ReleaseStringUTFChars(env, name, c);
+	(*env)->ReleaseStringUTFChars(env, value, c2);
+}
+
+JNIEXPORT void JNICALL pushValueo(JNIEnv* env, jobject this, jstring name, jobject value)
+{
+	if ((*env)->IsSameObject(env, value, NULL))
+  {
+		fbErr("attempted to return a null object\n");
+    return;
+  }
+
+	jstring str = getClassName((*env)->GetObjectClass(env, value));
+	const char* s = (*env)->GetStringUTFChars(env, str, NULL);
+
+	lua_getglobal(l, s);
+	int objPos = lua_gettop(l);
+	if (lua_type(l, -1) != LUA_TTABLE)
+	{
+		fbErr("attempted to return object of an unknown type \'%s\'", s);
+		(*env)->ReleaseStringUTFChars(env, str, s);
+    return;
+	}
+
+	jobject ref = (*env)->NewGlobalRef(env, value);
+
+	lua_newtable(l);
+	lua_pushnil(l);
+	while (lua_next(l, objPos) != 0)
+	{
+		lua_pushvalue(l, -2);
+		lua_insert(l, -2);
+		lua_settable(l, -4);
+	}
+	lua_pushlightuserdata(l, ref);
+	lua_setfield(l, -2, "ref");
+
+	luaL_getmetatable(l, "jobject");
+	lua_setmetatable(l, -2);
+
+	const char* c = (*env)->GetStringUTFChars(env, name, 0);
+	if (tableLevel > 0)
+		lua_setfield(l, -2, c);
+	else
+		lua_setglobal(l, c);
+
+	print("pushed jobject %s, %d", c, value);
+
+	(*env)->ReleaseStringUTFChars(env, name, c);
+	(*env)->ReleaseStringUTFChars(env, str, s);
 }
 
 jvalue* checkArgs(lua_State* l, Function* fun, int s)
@@ -235,6 +352,7 @@ int call(lua_State* l, Function* fun, jobject obj, jvalue* args)
 
 		luaL_getmetatable(l, "jobject");
 		lua_setmetatable(l, -2);
+		(*env)->ReleaseStringUTFChars(env, str, s);
 		return 1;
 	}
 	}

@@ -21,7 +21,7 @@ class OpmodeLoader
 	{
 		loadLibrary();
 
-		internalInit2();
+		internalInit();
 		builder.setCurrentClass(LuaStdlib::class.java);
 
 		builder.addStaticFunction("print", LuaType.Void, listOf(LuaType.String));
@@ -38,10 +38,7 @@ class OpmodeLoader
 	/**
 	 * Initializes the lua instance and returns a list with all of the opmode names.
 	 */
-	fun init(): Array<String>?
-	{
-		return internalInit();
-	}
+	external fun init(): Array<Opmode>?
 
 	/**
 	 * Closes the lua instance and cleans up all jobject references.
@@ -58,7 +55,12 @@ class OpmodeLoader
 	 * Calls start on the opmode with recognition as the first argument.
 	 */
 	external fun start(recognition: Int = 0);
-	
+
+	/**
+	 * Calls stop on the opmode.
+	 */
+	external fun stop();
+
 	/**
 	 * Calls the update function on the lua opmode with deltaTime as the first argument and elapsedTime as the second.
 	 * @param deltaTime time between last call and this one
@@ -77,6 +79,5 @@ class OpmodeLoader
 	 */
 	external fun callOpmodeFun(name: String, vararg args: Any);
 	
-	private external fun internalInit2();
-	private external fun internalInit(): Array<String>?;
+	private external fun internalInit();
 }
