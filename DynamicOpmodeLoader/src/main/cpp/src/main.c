@@ -187,7 +187,7 @@ JNIEXPORT void JNICALL internalInit(JNIEnv* env2, jobject this)
 #ifndef ANDROID
 	if (luaL_dostring(l, "package.path = \"./lua/?.lua;./lua/?/init.lua\""))
 #else
-	if (luaL_dostring(l, "package.path = \"/sdcard/lua/?.lua\;/sdcard/lua/?/init.lua\""))
+	if (luaL_dostring(l, "package.path = \"/sdcard/lua/?.lua;/sdcard/lua/?/init.lua\""))
 #endif
 	{
 		cpErr(lua_tostring(l, -1));

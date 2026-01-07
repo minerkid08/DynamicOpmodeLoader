@@ -50,6 +50,7 @@ add_library(
         src/vararg.c
         src/error.c
         src/lib.c
+        src/opmodeManager.c
 )
 
 target_include_directories(dynamicopmodeloader PRIVATE ./ ./include)

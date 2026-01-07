@@ -10,6 +10,15 @@ fun printf(fmt: String, vararg args: Any?)
 class E
 {
 	@OpmodeLoaderFunction
+	fun errorFun(i: Int): String
+	{
+		if(i == 1)
+			throw LuaError("error :)");
+
+		return "no error :)";
+	}
+
+	@OpmodeLoaderFunction
 	fun doThing(callback: LuaCallback)
 	{
 		println("did thing");

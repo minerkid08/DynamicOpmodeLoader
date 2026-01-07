@@ -1,11 +1,15 @@
 #include "error.h"
 #include "global.h"
+#include "lua/lauxlib.h"
+#include "lua/lua.h"
 #include "stdio.h"
+#include "utils.h"
 
 #include <jni.h>
+#include <string.h>
 
-#define LuaErrorClassName "com/minerkid08/dynamicopmodeloader/LuaError"
-#define CompileErrorClassName "com/minerkid08/dynamicopmodeloader/CompileError"
+#define LuaErrorClassName "com/minerkid08/dynamicopmodeloader/LuaRuntimeError"
+#define CompileErrorClassName "com/minerkid08/dynamicopmodeloader/LuaCompileError"
 #define FunctionBuilderErrorClassName "com/minerkid08/dynamicopmodeloader/FunctionBuilderError"
 #define OpmodeErrorClassName "com/minerkid08/dynamicopmodeloader/UndefinedOpmodeError"
 
@@ -24,7 +28,7 @@ void genError(ErrorDef* error, const char* className)
 {
 	error->class = (*env)->FindClass(env, className);
 	error->constructor = (*env)->GetMethodID(env, error->class, "<init>", "(Ljava/lang/String;)V");
-  error->class = (*env)->NewGlobalRef(env, error->class);
+	error->class = (*env)->NewGlobalRef(env, error->class);
 }
 
 void initError()
@@ -79,4 +83,28 @@ void opErr(const char* fmt, ...)
 	jobject j = (*env)->NewObject(env, opmodeError.class, opmodeError.constructor, str);
 
 	(*env)->Throw(env, j);
+}
+
+static jmethodID getMsgFun = 0;
+
+void handleError(lua_State* l)
+{
+	jthrowable obj = (*env)->ExceptionOccurred(env);
+	(*env)->ExceptionClear(env);
+	jclass class = (*env)->GetObjectClass(env, obj);
+	jstring str = getClassName(class);
+	const char* s = (*env)->GetStringUTFChars(env, str, NULL);
+	if (strcmp(s, "LuaError") == 0)
+	{
+    (*env)->ReleaseStringUTFChars(env, str, s);
+		if (getMsgFun == 0)
+			getMsgFun = (*env)->GetMethodID(env, class, "getLocalizedMessage", "()Ljava/lang/String;");
+
+		jstring msg = (*env)->CallObjectMethod(env, obj, getMsgFun);
+		const char* c = (*env)->GetStringUTFChars(env, msg, NULL);
+		luaL_error(l, c);
+	}
+  (*env)->Throw(env, obj);
+    (*env)->ReleaseStringUTFChars(env, str, s);
+  luaL_error(l, "e");
 }

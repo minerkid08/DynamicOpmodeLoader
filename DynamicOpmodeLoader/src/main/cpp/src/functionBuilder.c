@@ -148,10 +148,10 @@ JNIEXPORT void JNICALL pushValues(JNIEnv* env, jobject this, jstring name, jstri
 JNIEXPORT void JNICALL pushValueo(JNIEnv* env, jobject this, jstring name, jobject value)
 {
 	if ((*env)->IsSameObject(env, value, NULL))
-  {
+	{
 		fbErr("attempted to return a null object\n");
-    return;
-  }
+		return;
+	}
 
 	jstring str = getClassName((*env)->GetObjectClass(env, value));
 	const char* s = (*env)->GetStringUTFChars(env, str, NULL);
@@ -162,7 +162,7 @@ JNIEXPORT void JNICALL pushValueo(JNIEnv* env, jobject this, jstring name, jobje
 	{
 		fbErr("attempted to return object of an unknown type \'%s\'", s);
 		(*env)->ReleaseStringUTFChars(env, str, s);
-    return;
+		return;
 	}
 
 	jobject ref = (*env)->NewGlobalRef(env, value);
@@ -266,7 +266,7 @@ jvalue* checkArgs(lua_State* l, Function* fun, int s)
 	if ((*env)->ExceptionCheck(env))                                                                                   \
 	{                                                                                                                  \
 		free(args);                                                                                                    \
-		luaL_error(l, "e");                                                                                            \
+		handleError(l);                                                                                                \
 	}
 
 int call(lua_State* l, Function* fun, jobject obj, jvalue* args)

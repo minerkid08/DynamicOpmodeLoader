@@ -2,7 +2,7 @@ package com.minerkid08.dynamicopmodeloader
 
 import kotlin.RuntimeException
 
-class LuaError(message: String) : RuntimeException()
+class LuaRuntimeError(message: String) : RuntimeException()
 {
 	private var msg: String;
 	private var trace: Array<StackTraceElement> =
@@ -48,7 +48,7 @@ class LuaError(message: String) : RuntimeException()
 	override fun getLocalizedMessage() = msg;
 }
 
-class CompileError(private val msg: String) : RuntimeException()
+class LuaCompileError(private val msg: String) : RuntimeException()
 {
 	override fun getLocalizedMessage() = msg;
 }
@@ -59,6 +59,11 @@ class FunctionBuilderError(private val msg: String) : RuntimeException()
 }
 
 class UndefinedOpmodeError(private val msg: String) : RuntimeException()
+{
+	override fun getLocalizedMessage() = msg;
+}
+
+class LuaError(private val msg: String) : RuntimeException()
 {
 	override fun getLocalizedMessage() = msg;
 }

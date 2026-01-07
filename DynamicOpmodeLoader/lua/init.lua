@@ -30,12 +30,20 @@ addOpmode({
   type = Opmode.telop,
   group = "help",
   order = "a",
-  init = function()
+    init = function()
     --local files = io.list("/home/minerkid08");
     --for k, v in ipairs(files) do
     --  print('\'' .. v.name .. "\', " .. tostring(v.file));
     --end
-    local e = getE();
+        local e = getE();
+
+        local status, err = pcall(e.errorFun, e, 1);
+        if(status) then
+          print(err);
+        else
+          print("call failed with error '" .. err .. "'");
+        end
+
     local f = e:printThing("heh")
         :add(1, 2);
     print(tostring(e));
