@@ -51,6 +51,7 @@ add_library(
         src/error.c
         src/lib.c
         src/opmodeManager.c
+        src/defFile.c
 )
 
 target_include_directories(dynamicopmodeloader PRIVATE ./ ./include)

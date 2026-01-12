@@ -1,4 +1,5 @@
 #include "callback.h"
+#include "defFile.h"
 #include "functionBuilder.h"
 #include "lib.h"
 #include "lua/lauxlib.h"
@@ -18,6 +19,7 @@
 
 #define init Java_com_minerkid08_dynamicopmodeloader_OpmodeLoader_init
 #define internalInit Java_com_minerkid08_dynamicopmodeloader_OpmodeLoader_internalInit
+#define genDefFile Java_com_minerkid08_dynamicopmodeloader_OpmodeLoader_genDefinitionFile
 #define close Java_com_minerkid08_dynamicopmodeloader_OpmodeLoader_close
 #define loadOpmode Java_com_minerkid08_dynamicopmodeloader_OpmodeLoader_loadOpmode
 #define start Java_com_minerkid08_dynamicopmodeloader_OpmodeLoader_start
@@ -26,6 +28,7 @@
 #define callFun Java_com_minerkid08_dynamicopmodeloader_OpmodeLoader_callFun
 #define callOpmodeFun Java_com_minerkid08_dynamicopmodeloader_OpmodeLoader_callOpmodeFun
 
+int mode = MODE_NORMAL;
 int currentOpmode;
 lua_State* l = 0;
 JNIEnv* env;
@@ -204,9 +207,27 @@ JNIEXPORT void JNICALL internalInit(JNIEnv* env2, jobject this)
 	print("lua_state initalised");
 }
 
+JNIEXPORT void JNICALL genDefFile(JNIEnv* env, jobject this)
+{
+	mode = MODE_GENFILE;
+	initDefFile();
+}
+
 JNIEXPORT jobjectArray JNICALL init(JNIEnv* env2, jobject this)
 {
 	env = env2;
+
+  if(checkStack())
+    return 0;
+
+	if (mode == MODE_GENFILE)
+	{
+		closeDefFile();
+    if((*env)->ExceptionCheck(env))
+      return 0;
+		luaErr("file generation sucessfull");
+    return 0;
+	}
 
 	lua_pushcfunction(l, handleStackTrace);
 

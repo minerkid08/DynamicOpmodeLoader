@@ -22,6 +22,8 @@ void initClassFunctions();
 void initClassFunctionsLua();
 void resetClassFunctions();
 
+char checkStack();
+
 jvalue* checkArgs(lua_State* l, Function* fun, int skip);
 int call(lua_State* l, Function* fun, jobject ref, jvalue* args);
 int callStatic(lua_State* l, Function* fun, jclass ref, jvalue* args);

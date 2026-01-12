@@ -1,3 +1,4 @@
+#include "defFile.h"
 #include "dynList.h"
 #include "function.h"
 #include "functionBuilder.h"
@@ -77,6 +78,8 @@ JNIEXPORT void JNICALL addFun(JNIEnv* env2, jobject this, jstring name, jstring 
 		lua_setfield(l, -2, name2);
 	else
 		lua_setglobal(l, name2);
+
+	addf(name2, signature2);
 
 	print("add fun %s with id %d with sig %s", name2, functionId, signature2);
 

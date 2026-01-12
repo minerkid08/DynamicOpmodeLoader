@@ -1,9 +1,11 @@
+#include "defFile.h"
 #include "dynList.h"
 #include "function.h"
 #include "functionBuilder.h"
 #include "global.h"
 #include "lua/lauxlib.h"
 #include "lua/lua.h"
+#include "type.h"
 #include "utils.h"
 #include <jni.h>
 
@@ -42,6 +44,8 @@ JNIEXPORT void JNICALL createClass(JNIEnv* env, jobject this, jstring str)
 	const char* s = (*env)->GetStringUTFChars(env, str, NULL);
 	lua_newtable(l);
 	lua_setglobal(l, s);
+  addClass(s);
+
 	(*env)->ReleaseStringUTFChars(env, str, s);
 }
 
@@ -65,6 +69,7 @@ JNIEXPORT void JNICALL addFunc(JNIEnv* env2, jobject this, jclass class, jstring
 	jstring className2 = getClassName(class);
 	const char* className = (*env)->GetStringUTFChars(env, className2, NULL);
 
+  addClassFun(className, name2, signature2, rtnType == TBUILDER);
 	lua_getglobal(l, className);
 
 	if (lua_type(l, -1) == LUA_TNIL)

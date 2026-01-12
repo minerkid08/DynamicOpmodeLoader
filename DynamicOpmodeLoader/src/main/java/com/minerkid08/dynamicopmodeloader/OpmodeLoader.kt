@@ -25,8 +25,18 @@ class OpmodeLoader
 		builder.setCurrentClass(LuaStdlib::class.java);
 
 		builder.addStaticFunction("print", LuaType.Void, listOf(LuaType.String));
+		builder.pushTable("OpmodeType");
+		builder.pushValuei("Telop", 0);
+		builder.pushValuei("Auto", 1);
+		builder.popTable();
 	}
-	
+
+	/**
+	 * Starts generating the definition file
+	 * Once OpmodeLoader::init is called the state closes itself and errors to signal that it finished
+	 */
+	external fun genDefinitionFile();
+
 	/**
 	 * Returns a function builder object for exposing functions to lua.
 	 */

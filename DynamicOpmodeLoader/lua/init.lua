@@ -7,7 +7,7 @@ function c()
 end
 
 function e()
-  print(4);
+  print("heh");
 end
 
 function d()
@@ -20,37 +20,33 @@ end
 
 local c3 = 0;
 
-local Opmode = {
-  telop = 0,
-  auto = 1
-}
-
 addOpmode({
   name = ":)",
-  type = Opmode.telop,
+  type = OpmodeType.Telop,
   group = "help",
   order = "a",
-    init = function()
+  init = function()
     --local files = io.list("/home/minerkid08");
     --for k, v in ipairs(files) do
     --  print('\'' .. v.name .. "\', " .. tostring(v.file));
     --end
-        local e = getE();
+    local e = getE();
 
-        local status, err = pcall(e.errorFun, e, 1);
-        if(status) then
-          print(err);
-        else
-          print("call failed with error '" .. err .. "'");
-        end
+    local status, err = pcall(e.errorFun, e, 1);
+    if (status) then
+      print(err);
+    else
+      print("call failed with error '" .. err .. "'");
+    end
 
     local f = e:printThing("heh")
         :add(1, 2);
     print(tostring(e));
-    print(tostring(f));
+        print(tostring(f));
     e:enumThing(enum.fwd);
     e:enumThing(enum.bck);
-    e:doThing(a);
+        e:doThing(a);
+    e:err();
   end,
   update = function()
     c3 = c3 + 1;

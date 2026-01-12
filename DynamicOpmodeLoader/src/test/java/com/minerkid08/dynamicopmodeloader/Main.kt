@@ -7,7 +7,15 @@ fun printf(fmt: String, vararg args: Any?)
 	print(fmt.format(args));
 }
 
-class E
+open class Something
+{
+	fun err()
+	{
+		throw LuaError("heh");
+	}
+}
+
+class E : Something()
 {
 	@OpmodeLoaderFunction
 	fun errorFun(i: Int): String
@@ -65,14 +73,17 @@ class OpmodeGroup
 
 fun run()
 {
-	
 	val opmodeLoader = OpmodeLoader();
 
 	val builder = opmodeLoader.getFunctionBuilder();
 
+	//opmodeLoader.genDefinitionFile();
+
 	builder.addClassAsClass(E::class.java);
 	builder.addStaticClassAsGlobal(F::class.java);
 	builder.createClass("Enum");
+
+	builder.addClassFunction(E::class.java, "err");
 
 	builder.pushTable("enum");
 	builder.pushValueo("fwd", Enum.Forward);

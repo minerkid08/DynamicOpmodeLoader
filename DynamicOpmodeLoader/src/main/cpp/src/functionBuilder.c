@@ -1,5 +1,6 @@
 #include "functionBuilder.h"
 #include "callback.h"
+#include "defFile.h"
 #include "dynList.h"
 #include "error.h"
 #include "function.h"
@@ -53,6 +54,13 @@ void fbReset()
 	tableLevel = 0;
 }
 
+char checkStack()
+{
+  if(tableLevel)
+    fbErr("not all tables were popped off the stack\n");
+  return tableLevel;
+}
+
 JNIEXPORT void JNICALL pushTable(JNIEnv* env, jobject this, jstring name)
 {
 	lua_newtable(l);
@@ -63,6 +71,8 @@ JNIEXPORT void JNICALL pushTable(JNIEnv* env, jobject this, jstring name)
 	(*env)->ReleaseStringUTFChars(env, name, c);
 
 	tableLevel++;
+
+	addTable(n);
 
 	dynList_resize((void**)&tableNames, tableLevel);
 	print("pushed table %d, %s", tableLevel - 1, n);
@@ -79,6 +89,7 @@ JNIEXPORT void JNICALL popTable(JNIEnv* env, jobject this)
 		lua_setfield(l, -2, name);
 	else
 		lua_setglobal(l, name);
+	removeTable();
 	print("poped table %d, %s", tableLevel, name);
 	free(name);
 }
@@ -93,6 +104,7 @@ JNIEXPORT void JNICALL pushValuei(JNIEnv* env, jobject this, jstring name, int v
 	else
 		lua_setglobal(l, c);
 
+	addi(c, value);
 	print("pushed int %s, %d", c, value);
 
 	(*env)->ReleaseStringUTFChars(env, name, c);
@@ -108,6 +120,7 @@ JNIEXPORT void JNICALL pushValued(JNIEnv* env, jobject this, jstring name, doubl
 	else
 		lua_setglobal(l, c);
 
+	addd(c, value);
 	print("pushed double %s, %f", c, value);
 
 	(*env)->ReleaseStringUTFChars(env, name, c);
@@ -123,6 +136,7 @@ JNIEXPORT void JNICALL pushValueb(JNIEnv* env, jobject this, jstring name, char 
 	else
 		lua_setglobal(l, c);
 
+	addb(c, value);
 	print("pushed bool %s, %d", c, value);
 
 	(*env)->ReleaseStringUTFChars(env, name, c);
@@ -139,6 +153,7 @@ JNIEXPORT void JNICALL pushValues(JNIEnv* env, jobject this, jstring name, jstri
 	else
 		lua_setglobal(l, c);
 
+	adds(c, c2);
 	print("pushed bool %s, %s", c, c2);
 
 	(*env)->ReleaseStringUTFChars(env, name, c);
@@ -187,6 +202,7 @@ JNIEXPORT void JNICALL pushValueo(JNIEnv* env, jobject this, jstring name, jobje
 	else
 		lua_setglobal(l, c);
 
+	addo(c, s);
 	print("pushed jobject %s, %d", c, value);
 
 	(*env)->ReleaseStringUTFChars(env, name, c);
