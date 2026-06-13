@@ -6,6 +6,7 @@
 #include "utils.h"
 
 #include <jni.h>
+#include <stdlib.h>
 #include <string.h>
 
 #define LuaErrorClassName "com/minerkid08/dynamicopmodeloader/LuaRuntimeError"
@@ -92,11 +93,10 @@ void handleError(lua_State* l)
 	jthrowable obj = (*env)->ExceptionOccurred(env);
 	(*env)->ExceptionClear(env);
 	jclass class = (*env)->GetObjectClass(env, obj);
-	jstring str = getClassName(class);
-	const char* s = (*env)->GetStringUTFChars(env, str, NULL);
+	const char* s = getClassName(class);
 	if (strcmp(s, "LuaError") == 0)
 	{
-    (*env)->ReleaseStringUTFChars(env, str, s);
+		free((void*)s);
 		if (getMsgFun == 0)
 			getMsgFun = (*env)->GetMethodID(env, class, "getLocalizedMessage", "()Ljava/lang/String;");
 
@@ -104,7 +104,7 @@ void handleError(lua_State* l)
 		const char* c = (*env)->GetStringUTFChars(env, msg, NULL);
 		luaL_error(l, c);
 	}
-  (*env)->Throw(env, obj);
-    (*env)->ReleaseStringUTFChars(env, str, s);
-  luaL_error(l, "e");
+	(*env)->Throw(env, obj);
+	free((void*)s);
+	luaL_error(l, "e");
 }

@@ -56,9 +56,9 @@ void fbReset()
 
 char checkStack()
 {
-  if(tableLevel)
-    fbErr("not all tables were popped off the stack\n");
-  return tableLevel;
+	if (tableLevel)
+		fbErr("not all tables were popped off the stack\n");
+	return tableLevel;
 }
 
 JNIEXPORT void JNICALL pushTable(JNIEnv* env, jobject this, jstring name)
@@ -168,15 +168,14 @@ JNIEXPORT void JNICALL pushValueo(JNIEnv* env, jobject this, jstring name, jobje
 		return;
 	}
 
-	jstring str = getClassName((*env)->GetObjectClass(env, value));
-	const char* s = (*env)->GetStringUTFChars(env, str, NULL);
+	const char* s = getClassName((*env)->GetObjectClass(env, value));
 
 	lua_getglobal(l, s);
 	int objPos = lua_gettop(l);
 	if (lua_type(l, -1) != LUA_TTABLE)
 	{
 		fbErr("attempted to return object of an unknown type \'%s\'", s);
-		(*env)->ReleaseStringUTFChars(env, str, s);
+		free((void*)s);
 		return;
 	}
 
@@ -206,7 +205,7 @@ JNIEXPORT void JNICALL pushValueo(JNIEnv* env, jobject this, jstring name, jobje
 	print("pushed jobject %s, %d", c, value);
 
 	(*env)->ReleaseStringUTFChars(env, name, c);
-	(*env)->ReleaseStringUTFChars(env, str, s);
+	free((void*)s);
 }
 
 jvalue* checkArgs(lua_State* l, Function* fun, int s)
@@ -343,9 +342,12 @@ int call(lua_State* l, Function* fun, jobject obj, jvalue* args)
 		jobject res = (*env)->CallObjectMethodA(env, obj, fun->funId, args);
 		errorCheck();
 		if ((*env)->IsSameObject(env, res, NULL))
-			luaL_error(l, "attempted to return a null object\n");
-		jstring str = getClassName((*env)->GetObjectClass(env, res));
-		const char* s = (*env)->GetStringUTFChars(env, str, NULL);
+		{
+			lua_pushnil(l);
+			free(args);
+			return 1;
+		}
+		const char* s = getClassName((*env)->GetObjectClass(env, res));
 		free(args);
 
 		lua_getglobal(l, s);
@@ -368,7 +370,7 @@ int call(lua_State* l, Function* fun, jobject obj, jvalue* args)
 
 		luaL_getmetatable(l, "jobject");
 		lua_setmetatable(l, -2);
-		(*env)->ReleaseStringUTFChars(env, str, s);
+		free((void*)s);
 		return 1;
 	}
 	}
@@ -432,14 +434,14 @@ int callStatic(lua_State* l, Function* fun, jclass obj, jvalue* args)
 	case LUA_TTABLE: {
 		jobject res = (*env)->CallStaticObjectMethodA(env, obj, fun->funId, args);
 		errorCheck();
-		jstring str = getClassName((*env)->GetObjectClass(env, res));
-		const char* s = (*env)->GetStringUTFChars(env, str, NULL);
+		const char* s = getClassName((*env)->GetObjectClass(env, res));
 		free(args);
 
 		lua_getglobal(l, s);
 		int objPos = lua_gettop(l);
 		if (lua_type(l, -1) != LUA_TTABLE)
 			luaL_error(l, "attempted to return object of an unknown type \'%s\'", s);
+		free((void*)s);
 
 		jobject ref = (*env)->NewGlobalRef(env, res);
 

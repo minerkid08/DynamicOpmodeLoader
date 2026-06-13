@@ -8,6 +8,7 @@
 #include "type.h"
 #include "utils.h"
 #include <jni.h>
+#include <stdlib.h>
 
 #define createClass Java_com_minerkid08_dynamicopmodeloader_FunctionBuilder_createClass
 #define addFunc Java_com_minerkid08_dynamicopmodeloader_FunctionBuilder_addFunctionc
@@ -66,8 +67,7 @@ JNIEXPORT void JNICALL addFunc(JNIEnv* env2, jobject this, jclass class, jstring
 		rtnType2 = -1;
 	function_initX(fun, class, name2, signature2, rtnType2, argc);
 
-	jstring className2 = getClassName(class);
-	const char* className = (*env)->GetStringUTFChars(env, className2, NULL);
+	const char* className = getClassName(class);
 
   addClassFun(className, name2, signature2, rtnType == TBUILDER);
 	lua_getglobal(l, className);
@@ -90,7 +90,7 @@ JNIEXPORT void JNICALL addFunc(JNIEnv* env2, jobject this, jclass class, jstring
 
 	(*env)->ReleaseStringUTFChars(env, name, name2);
 	(*env)->ReleaseStringUTFChars(env, signature, signature2);
-	(*env)->ReleaseStringUTFChars(env, className2, className);
+	free((void*)className);
 }
 
 int callClassFunc(lua_State* l)

@@ -2,6 +2,7 @@
 #include "global.h"
 #include "utils.h"
 #include "string.h"
+#include <stdlib.h>
 
 static jmethodID getBool = 0L;
 static jmethodID getInt = 0L;
@@ -13,8 +14,7 @@ void pushArgs(jobjectArray args, int len)
 	{
 		jobject elem = (*env)->GetObjectArrayElement(env, args, i);
 		jclass class = (*env)->GetObjectClass(env, elem);
-		jstring className = getClassName(class);
-		const char* name = (*env)->GetStringUTFChars(env, className, 0);
+		const char* name = getClassName(class);
 
 		if (strcmp(name, "Boolean") == 0)
 		{
@@ -43,6 +43,6 @@ void pushArgs(jobjectArray args, int len)
 			lua_pushstring(l, str);
 			(*env)->ReleaseStringUTFChars(env, elem, str);
 		}
-		(*env)->ReleaseStringUTFChars(env, className, name);
+		free((void*)name);
 	}
 }

@@ -52,8 +52,10 @@ add_library(
         src/lib.c
         src/opmodeManager.c
         src/defFile.c
+				src/lib/buffer.c
 )
 
+target_compile_options(dynamicopmodeloader PUBLIC -o3)
 target_include_directories(dynamicopmodeloader PRIVATE ./ ./include)
 
 find_library(

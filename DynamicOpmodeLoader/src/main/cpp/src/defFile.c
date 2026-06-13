@@ -272,25 +272,45 @@ void closeDefFile()
 
 	printTable(table, file, 0);
 
-	fprintf(file, "---@class Dir\n");
-	fprintf(file, "---@field name string\n");
-	fprintf(file, "---@field file boolean\n\n");
+	const char* libDefFile =
+	"---@class Buffer2d\n"
+	"Buffer2d = {}\n"
+	"\n"
+	"---@param x integer\n"
+	"---@param y integer\n"
+	"---@param str string\n"
+	"function Buffer2d:write(x, y, str) end\n"
+	"\n"
+	"---@param y integer\n"
+	"---@return str\n"
+	"function Buffer2d:readLine(y) end\n"
+	"\n"
+	"---@param str string\n"
+	"function Buffer2d:fill(str) end\n"
+	"\n"
+	"function Buffer2d:free() end\n"
+	"\n"
+	"---@class Dir\n"
+	"---@field name string\n"
+	"---@field file boolean\n"
+	"\n"
+	"---@param path string\n"
+	"---@return Dir[]\n"
+	"function io.list(path) end\n"
+	"\n"
+	"---@enum OpmodeType\n"
+	"OpmodeType = {Telop = 0, Auto = 1};\n"
+	"\n"
+	"---@class Opmode\n"
+	"---@field name string\n"
+	"---@field type OpmodeType\n"
+	"---@field group string\n"
+	"---@field order string\n"
+	"\n"
+	"---@param opmode Opmode\n"
+	"function addOpmode(opmode) end";
 
-	fprintf(file, "---@param path string\n");
-	fprintf(file, "---@return Dir[]\n");
-	fprintf(file, "function io.list(path) end\n\n");
-
-	fprintf(file, "---@enum OpmodeType\n");
-	fprintf(file, "OpmodeType = {Telop = 0, Auto = 1};\n\n");
-
-	fprintf(file, "---@class Opmode\n");
-	fprintf(file, "---@field name string\n");
-	fprintf(file, "---@field type OpmodeType\n");
-	fprintf(file, "---@field group string\n");
-	fprintf(file, "---@field order string\n\n");
-
-	fprintf(file, "---@param opmode Opmode\n");
-	fprintf(file, "function addOpmode(opmode) end");
+	fprintf(file, "%s", libDefFile);
 
 	fclose(file);
 

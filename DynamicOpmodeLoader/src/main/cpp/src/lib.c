@@ -29,7 +29,7 @@ static int ls(lua_State* l)
 			lua_pushboolean(l, dir->d_type == DT_REG);
 			lua_setfield(l, -2, "file");
 			lua_seti(l, -2, n);
-            n++;
+			n++;
 		}
 		closedir(d);
 		return 1;
@@ -41,10 +41,14 @@ static int ls(lua_State* l)
 	}
 }
 
+int buffer2dNew(lua_State* l);
+
 void addFunc(lua_State* l)
 {
-    lua_getglobal(l, "io");
-  lua_pushcfunction(l, ls);
-  lua_setfield(l, -2, "list");
-    lua_pop(l, 1);
+	lua_getglobal(l, "io");
+	lua_pushcfunction(l, ls);
+	lua_setfield(l, -2, "list");
+	lua_pop(l, 1);
+	lua_pushcfunction(l, buffer2dNew);
+	lua_setglobal(l, "newBuf");
 }

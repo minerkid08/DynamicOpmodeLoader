@@ -2,6 +2,7 @@
 #include "global.h"
 #include "jni.h"
 #include <malloc.h>
+#include <string.h>
 
 static jobject obj = 0;
 static jmethodID printId;
@@ -51,9 +52,28 @@ void print(const char* fmt, ...)
 	(*env)->CallStaticVoidMethod(env, obj, printId, str);
 }
 
-jstring getClassName(jclass class)
+const char* getClassName(jclass class)
 {
-	return (*env)->CallObjectMethod(env, class, getClassId);
+	jstring name2 = (*env)->CallObjectMethod(env, class, getClassId);
+	const char* name = (*env)->GetStringUTFChars(env, name2, 0);
+	
+	int len = strlen(name);
+	int start = 0;
+	int end = len;
+	for(int i = 0; i < len; i++)
+	{
+		if(name[i] == '.')
+			start = i;
+		if(name[i] == '$')
+			end = i;
+	}
+
+	len = end - start;
+	char* n = malloc(len + 1);
+	memcpy(n, name, len);
+	n[len] = 0;
+	(*env)->ReleaseStringUTFChars(env, name2, name);
+	return n;
 }
 
 char strStartsWith(const char* a, const char* b)

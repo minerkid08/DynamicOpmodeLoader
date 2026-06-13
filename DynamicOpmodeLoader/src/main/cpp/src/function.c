@@ -15,10 +15,9 @@ void function_initX(Function* this, jclass class, const char* name, const char* 
 	if ((*env)->ExceptionCheck(env))
 	{
 		(*env)->ExceptionDescribe(env);
-		jstring str = getClassName(class);
-		const char* str2 = (*env)->GetStringUTFChars(env, str, 0);
+		const char* str2 = getClassName(class);
 		fbErr("can't find function with signature '%s.%s%s'", str2, name, sig);
-		(*env)->ReleaseStringUTFChars(env, str, str2);
+		free((void*)str2);
 	}
 
 	this->obj = 0;
@@ -41,7 +40,7 @@ void function_initX(Function* this, jclass class, const char* name, const char* 
 				this->argTypes[currentArg++] = LUA_TFUNCTION;
 			else
 				this->argTypes[currentArg++] = LUA_TTABLE;
-			while (sig[++i] == ';')
+			while (sig[++i] != ';')
 				;
 		}
 		if (c == 'D')
@@ -62,10 +61,9 @@ void function_initStaticX(Function* this, jclass class, const char* name, const 
 	if ((*env)->ExceptionCheck(env))
 	{
 		(*env)->ExceptionDescribe(env);
-		jstring str = getClassName(class);
-		const char* str2 = (*env)->GetStringUTFChars(env, str, 0);
+		const char* str2 = getClassName(class);
 		fbErr("can't find function with signature '%s.%s%s'", str2, name, sig);
-		(*env)->ReleaseStringUTFChars(env, str, str2);
+		free((void*)str2);
 	}
 
 	this->obj = class;
@@ -110,10 +108,9 @@ void function_init(Function *this, jobject obj, const char *name, const char *si
 	if ((*env)->ExceptionCheck(env))
 	{
 		(*env)->ExceptionDescribe(env);
-		jstring str = getClassName(class);
-		const char* str2 = (*env)->GetStringUTFChars(env, str, 0);
+		const char* str2 = getClassName(class);
 		fbErr("can't find function with signature '%s.%s%s'", str2, name, sig);
-		(*env)->ReleaseStringUTFChars(env, str, str2);
+		free((void*)str2);
 	}
 
 	this->obj = obj;

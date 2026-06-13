@@ -1,13 +1,36 @@
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "global.h"
-#include "utils.h"
-
 #include <jni.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+
+static jobject obj = 0;
+static jmethodID printId;
+static JNIEnv* env;
+static char buf[256];
+
+static void initUtils()
+{
+	if(obj == 0)
+	{
+		jclass class = (*env)->FindClass(env, "com/minerkid08/dynamicopmodeloader/LuaStdlib");
+		printId = (*env)->GetStaticMethodID(env, class, "print", "(Ljava/lang/String;)V");
+		obj = (*env)->NewGlobalRef(env, class);
+	}
+}
+
+static void print(const char* fmt, ...)
+{
+	va_list va;
+	va_start(va, fmt);
+	vsnprintf(buf, 256, fmt, va);
+
+	jstring str = (*env)->NewStringUTF(env, buf);
+	(*env)->CallStaticVoidMethod(env, obj, printId, printId, str);
+}
 
 #define unpack Java_com_minerkid08_dynamicopmodeloader_FileServer_unzip
 

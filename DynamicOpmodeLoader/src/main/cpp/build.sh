@@ -1,1 +1,1 @@
-gcc -DENABLE_LUA_ASSERT -DLUA_ENABLE_APICHECK -shared -fpic -o ../../test/jniLibs/libdynamicopmodeloader.so -I./ -Iinclude -g src/*.c include/lua/*.c -I/usr/lib/jvm/java-25-openjdk/include -I/usr/lib/jvm/java-25-openjdk/include/linux
+gcc -DENABLE_LUA_ASSERT -DLUA_ENABLE_APICHECK -shared -fpic -o ../../test/jniLibs/libdynamicopmodeloader.so -I./ -Iinclude -g src/*.c src/lib/*.c include/lua/*.c -I/usr/lib/jvm/java-25-openjdk/include -I/usr/lib/jvm/java-25-openjdk/include/linux
