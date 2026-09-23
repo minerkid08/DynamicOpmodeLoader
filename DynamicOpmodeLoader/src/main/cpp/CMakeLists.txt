@@ -41,12 +41,21 @@ add_library(
         src/dynList.c
         src/function.c
         src/functionBuilder.c
+        src/classFunctions.c
+        src/globalFunctions.c
+        src/staticFunctions.c
         src/main.c
         src/utils.c
         src/unpack.c
         src/vararg.c
+        src/error.c
+        src/lib.c
+        src/opmodeManager.c
+        src/defFile.c
+				src/lib/buffer.c
 )
 
+target_compile_options(dynamicopmodeloader PUBLIC -o3)
 target_include_directories(dynamicopmodeloader PRIVATE ./ ./include)
 
 find_library(

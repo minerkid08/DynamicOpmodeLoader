@@ -1,11 +1,11 @@
 package com.minerkid08.dynamicopmodeloader
 
-class OpmodeLoader()
+class OpmodeLoader
 {
 	companion object
 	{
 		private var loaded = false;
-
+		@JvmStatic
 		fun loadLibrary()
 		{
 			if(!loaded)
@@ -15,20 +15,30 @@ class OpmodeLoader()
 			}
 		}
 	}
-	private val stdlib = LuaStdlib();
 	private val builder = FunctionBuilder();
 	
 	init
 	{
-		internalInit2(stdlib);
-		
-		builder.setCurrentObject(stdlib);
-		
-		builder.addObjectFunction("print", LuaType.Void, listOf(LuaType.String));
+		loadLibrary();
+
+		internalInit();
+		builder.setCurrentClass(LuaStdlib::class.java);
+
+		builder.addStaticFunction("print", LuaType.Void, listOf(LuaType.String));
+		builder.pushTable("OpmodeType");
+		builder.pushValuei("Telop", 0);
+		builder.pushValuei("Auto", 1);
+		builder.popTable();
 	}
-	
+
 	/**
-	 * returns a function builder object for exposing functions to lua
+	 * Starts generating the definition file
+	 * Once OpmodeLoader::init is called the state closes itself and errors to signal that it finished
+	 */
+	external fun genDefinitionFile();
+
+	/**
+	 * Returns a function builder object for exposing functions to lua.
 	 */
 	fun getFunctionBuilder(): FunctionBuilder
 	{
@@ -36,43 +46,48 @@ class OpmodeLoader()
 	}
 	
 	/**
-	 * initalizes the lua instance and returns a list with all of the opmode names
+	 * Initializes the lua instance and returns a list with all of the opmode names.
 	 */
-	fun init(): Array<String>?
-	{
-		return internalInit();
-	}
+	external fun init(): Array<Opmode>?
 
 	/**
-	 * closes the lua instance and cleans up all refrences to jobjects
+	 * Closes the lua instance and cleans up all jobject references.
 	 */
 	external fun close();
 
 	/**
-	 * loads an opmode to be run
+	 * Loads an opmode to be run and calls init on that opmode.
+	 * @param name the name of the opmode to load.
 	 */
 	external fun loadOpmode(name: String);
 	
 	/**
-	 * starts the opmode
+	 * Calls start on the opmode with recognition as the first argument.
 	 */
 	external fun start(recognition: Int = 0);
-	
+
 	/**
-	 * calls the update function on the lua opmode with deltaTime as the first argument and elapsedTime as the second
+	 * Calls stop on the opmode.
 	 */
-	external fun update(deltaTime: Double, elapsedTime: Double);
+	external fun stop();
+
+	/**
+	 * Calls the update function on the lua opmode with deltaTime as the first argument and elapsedTime as the second.
+	 * @param deltaTime time between last call and this one
+	 * @param elapsedTime time that the opmode has been running
+	 * @return should the opmode stop
+	 */
+	external fun update(deltaTime: Double = 0.0, elapsedTime: Double = 0.0): Boolean;
 	
 	/**
-	 * calls a global function with args as the arguments
+	 * Calls a global function with args as the arguments.
 	 */
 	external fun callFun(name: String, vararg args: Any);
 	
 	/**
-	 * calls a function in the opmode table with args as the arguments
+	 * Calls a function in the opmode table with args as the arguments.
 	 */
 	external fun callOpmodeFun(name: String, vararg args: Any);
 	
-	private external fun internalInit2(luaStdlib: LuaStdlib);
-	private external fun internalInit(): Array<String>?;
+	private external fun internalInit();
 }

@@ -1,8 +1,22 @@
 # FTC Dynamic Opmode Loader
 
-A library for controling your robot with the lua programming language allowing for significantly faster upload times.
+A library for controlling your robot with the lua programming language allowing for significantly faster upload times.
 
-# Installation
+# Table of Contents
+1. [Installation](#installation)
+2. [Usage](#usage)
+    1. [Java](#usage-java)
+    2. [Lua](#usage-lua)
+    3. [Adding Functions to Lua](#usage-adding-functions)
+    4. [Organizing Functions](#usage-orgznization)
+    5. [Callbacks](#usage-callbacks)
+    6. [Manually Adding Functions](#usage-manually-adding-functions)
+3. [Uploading](#uploading)
+    1. [Adb](#uploading-adb)
+    2. [Custom Program](#uploading-custom)
+4. [Api Docs](#docs)
+
+# Installation <a name = "installation">
 
 1. Download `dynamicopmodeloader.aar` from the latest release
 2. Place this file in the root of your project
@@ -14,11 +28,11 @@ A library for controling your robot with the lua programming language allowing f
 5. Place it in the teamcode folder
 6. In android studio install the SumnekoLua plugin and restart the IDE
 
-# Usage
+# Usage <a name = "usage">
 
-### Java
+## Java <a name = "usage-java">
 
-Create a new opmode class and create an `OpmodeLoader` object.
+Create an `OpmodeLoader` object.
 ```java
 OpmodeLoader opmodeLoader = new OpmodeLoader();
 ```
@@ -28,10 +42,10 @@ String[] opmodes = opmodeLoader.init();
 ```
 Load your opmode of choice.
 ```java
-opmodeLoader.loadOpmode("testOpmode");
+opmodeloader.loadOpmode("testOpmode");
 ```
 Wait for the opmode to be started.
-Start the opmode with the recognition id.
+Start the opmode.
 ```java
 opmodeLoader.start(0);
 ```
@@ -60,18 +74,143 @@ while(opModeIsActive())
 }
 ```
 
+## Lua <a name = "usage-lua">
+
+The java example wont do much on its own than throw an error.
+
+The library runs `lua/init.lua` on init, in this file you can define your opmodes and add them with `addOpmode()`.
+
+```lua
+local testOpmode = {
+    name = "testOpmode",
+    init = function()
+    end,
+    start = function(recognitionId)
+    end,
+    update = function(deltaTime, elapsedTime)
+    end
+);
+
+addOpmode(testOpmode);
+```
+Note that the init, start and update fields are optional.
+
+## Adding Functions To Lua <a name = "usage-adding-functions">
+
 To give the lua code the ability to interact with the robot we need to give it some functions.
 The `FunctionBuilder` class exposes functions to the lua code.
 After you init the `OpmodeLoader` object you can get a `FunctionBuilder` by calling `OpmodeLoader::getFunctionBuilder()`
 
-With this object you can create either object functions or global functions.
+With this object you can create either class functions or global functions.
 
-For global functions set the object the functions will come from with `FunctionBuilder::setCurrentObject(object)` and add the functions with `FunctionBuilder::addObjectFunction(String name, LuaType returnType, List<LuaType> argTypes)`
+Class functions are defined from a class and any object with that class can call the function.
+Global functions exist in the global table and can call any member function on a java class.
+
+In your java class you can add the `OpmodeLoaderFunction` annotation to the functions that you want to expose to lua.
+```java
+class ExampleModule
+{
+    @OpmodeLoaderFunction
+    public void doThing(int a, float b) { ... }
+
+    @OpmodeLoaderFunction
+    public string doThing2(string a, float b) { ... }
+
+    @OpmodeLoaderFunction
+    public float doThing3(bool a, double b) { ... }
+}
+```
+
+Then you can add your functions to with the function builder object.
 
 ```java
-class TestObject
+FunctionBuilder builder = opmodeloader.getFunctionBuilder();
+
+builder.addClassAsGlobal(ExampleModule); // add function as global function
+
+builder.addClassAsClass(ExampleModule); // add function as class function
+```
+
+On the lua side, calling these functions can be done like any other function
+```lua
+-- from ExampleObjectFunctionObject
+local object = getObject();
+
+-- from ExampleClassFunctionObject
+object:doThing(3, 4);
+-- note the colon that is used in place of the dot in java
+-- this is so the object is passed as the first argument into the function as lua does not have classes like other languages
+-- this is equivalent to
+object.doThing(object, 3, 4);
+```
+
+## Organizing your functions <a name = "usage-organization">
+
+Object functions can be put into lua tables to help organize them like drive or arm functions.
+You can create a table using `FunctionBuilder.pushTable(String name)` and all object functions defined after it get put in the table.
+After all of your functions are in the table you have to pop the table with `FunctionBuilder.popTable()`.
+
+```java
+FunctionBuilder builder;
+
+builder.pushTable("robot");
+
+builder.addClassAsGlobal(Drive);
+// adds drive function robot
+
+builder.pushTable("arm");
+
+builder.addClassAsGlobal(Arm);
+// adds arm functions robot.arm
+
+// pop arm table
+builder.popTable();
+
+// pop robot table
+builder.popTable();
+```
+
+## Callbacks <a name = "usage-callbacks">
+
+Sometimes you want you java code to call a function that is passed into it.
+Callbacks can be defined with the `LuaType.Callback` argument type and the `LuaCallback` type as the function argument.
+They can be called later with `LuaCallback.call(...)`
+```java
+class ExampleCallbackObject
 {
-    public String doThing(double a, double b)
+    @OpmodeLoaderFunction
+    public void doThing(LuaCallback callback)
+    {
+        //do some stuff here
+
+        callback.call();
+    }
+}
+
+// in opmode
+
+FunctionBuilder builder = opmodeLoader.getFunctionBuilder();
+builder.addClassAsGlobal(ExampleCallbackObject.class);
+```
+
+In lua you pass a function as one of the arguments.
+```lua
+function callback()
+    print("heh");
+end
+
+doThing(callback);
+```
+
+## Manually Adding More Functions <a name = "usage-manually-adding-functions">
+
+Defining class functions can be done with `FunctionBuilder.addClassFunction(Class<*> class, String name, LuaType returnType = LuaType.Void, List<LuaType> argTypes = null)`
+
+Note: you will need to define an object function to get an instance of the object.
+```java
+class ExampleClassFunctionObject 
+{
+    public String doThing(int a, int b)
     {
         return String.format("%d", a + b);
     }
@@ -81,56 +220,45 @@ class TestObject
 
 TestObject testObject = new TestObject();
 FunctionBuilder builder = opmodeLoader.getFunctionBuilder();
-builder.setCurrentObject(testObject);
-builder.addObjectFunction("doThing", LuaType.String, Arrays.asList(LuaType.Number, LuaType.Number));
+builder.addClassFunction(ExampleClassFunctionObject.class, "doThing", LuaType.String, List.of(LuaType.Int, LuaType.Int));
 ```
 
-For object functions you need to call `FunctionBuilder::addClassFunction(Class<*> clazz, String name, LuaType returnType, List<LuaType> argTypes)`
-Note you will have to add a global function to get an instance of the object.
-
+Defining object functions is similar but requires you to set the object first with `<T> FunctionBuilder.setCurrentObject(T object)` then add the functin with `FunctionBuilder.addObjectFunction(String name, LuaType returnType = LuaType.Void, List<LuaType> argTypes = null)`
 ```java
-class TestObject
+class ExampleObjectFunctionObject
 {
-    public String doThing(double a, double b)
-    {
-        return String.format("%d", a + b);
-    }
-}
-
-class TestObjectGetter
-{
-    public TestObject getTestObject()
-    {
-        return new TestObject();
-    }
+   public ExampleClassFunctionObject getObject()
+   {
+      return new ExampleClassFunctionObject();
+   }
 }
 
 // in opmode
 
+ExampleObjectFunctionObject object = new ExampleObjectFunctionObject();
 FunctionBuilder builder = opmodeLoader.getFunctionBuilder();
-builder.addClassFunction(TestObject, "doThing", LuaType.String, Arrays.asList(LuaType.Number, LuaType.Number));
-
-TestObjectBuilder testObjectBuilder = new TestObjectBuilder();
-builder.setCurrentObject(testObjectBuilder);
-builder.addObjectFunction("getTestObject", LuaType.Object(TestObject));
-```
-### Lua
-
-Add your opmodes with `addOpmode()`
-Note that the init, start and update fields are optional
-
-```lua
-addOpmode({
-    name = "testOpmode",
-    init = function()
-    end,
-    start = function(recognitionId)
-    end,
-    update = function(deltaTime, elapsedTime)
-    end
-})
+builder.setCurrentObject(object);
+builder.addObjectFunction("getObject", LuaType.Object(ExampleClassFunctionObject.class));
 ```
 
-To send your code to the robot open the terminal in android studio and run `bash sync.sh`. If you are on windows than you may need to run `sh sync.sh` as bash is not installed by default.
+# Uploading <a name = "uploading">
 
-# (API Docs)[https://minerkid08.github.io/DynamicOpmodeLoader/]
+There are two methods for uploading code remotely
+1. A shell script that sends all of the files using adb. (~5 seconds)
+2. A program that sends all of the files to the robot using a custom server (0 seconds) (windows and linux only)
+
+## Adb <a name = "uploading-adb">
+
+The lua quick start contains a `sync.sh` file that has to be run in the folder it lives in.
+Either open the terminal and navigate to that location and run it with bash or sh, or run it with a launch configuration.
+To create the launch configuration open the configuration editing window and add a new shell script configuration, set the script path to the path of the script file and the working directory to the directory the script file is in.
+
+## Upload Program <a name = "uploading-custom">
+
+The lua quick start contains a `pack` file for linux and a `pack.exe` for windows that has to be run in the folder it lives in.
+Using the terminal and navigate to the path the file is in and run the file for your operating system.
+
+For Mac users the source for that program is in the `uploadUtil` directory in the project root, note that it is untested on that platform.
+
+# Api Docs <a name = "docs">
+[https://minerkid08.github.io/DynamicOpmodeLoader/]

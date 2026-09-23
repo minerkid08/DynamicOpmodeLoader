@@ -2,55 +2,73 @@ package com.minerkid08.dynamicopmodeloader
 
 import java.io.File
 import java.io.FileOutputStream
+import java.io.InputStream
+import java.io.InputStreamReader
 import java.net.ServerSocket
+import java.net.SocketAddress
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 import kotlin.math.min
 
-class FileServer
+object FileServer
 {
-	companion object
-	{
-		fun start()
-		{
-			OpmodeLoader.loadLibrary();
-			FileServer().startUnzipServer();
-		}
-	}
+	var path = "/sdcard";
 
-	fun startUnzipServer()
+	@JvmStatic
+	fun start()
 	{
-		val stdlib = LuaStdlib();
-		stdlib.print("server starting");
+		OpmodeLoader.loadLibrary();
+
+		LuaStdlib.log("fserver", "server starting");
 		val thread = Thread({
 			val serverSocket = ServerSocket(6969);
-			stdlib.print("server started");
-			while(true)
+			LuaStdlib.log("fserver", "server started");
+			while (true)
 			{
-				val path = ".";
 				val socket = serverSocket.accept();
 				val stream = socket.getInputStream();
 
-				val lenBytes= ByteArray(8);
-				stream.read(lenBytes, 0, 8);
-				val len: ULong = lenBytes.foldIndexed(0uL) { index, acc, byte -> acc + (byte.toULong() shl index * 8)};
+				val len = readLong(stream);
 
-				var bytes = 0;
 				var bytesRead = 0uL;
+				File(path).mkdirs();
 				val file = File("$path/data.pak");
 				val outputStream = FileOutputStream(file);
 				val arr = ByteArray(512);
-				while(bytesRead < len)
+				LuaStdlib.log("fserver", "receiving file of length %x".format(len.toLong()));
+				while (bytesRead < len)
 				{
-					bytes = stream.read(arr, 0, min(512, (len - bytesRead).toInt()));
+					val bytes = stream.read(arr, 0, min(512, (len - bytesRead).toInt()));
 					outputStream.write(arr, 0, bytes);
 					bytesRead += bytes.toULong();
 				}
 				outputStream.close();
-				unzip(stdlib, path);
+				unzip(path);
 				socket.close();
 			}
 		});
 		thread.start();
 	}
 
-	private external fun unzip(stdlib: LuaStdlib, path: String);
+	fun readLong(inputStream: InputStream): ULong
+	{
+		val buffer = ByteArray(ULong.SIZE_BYTES);
+		var bytesRead = 0;
+		while (bytesRead < ULong.SIZE_BYTES)
+		{
+			val result = inputStream.read(buffer, bytesRead, ULong.SIZE_BYTES - bytesRead);
+			if (result == -1)
+			{
+				error("failed to read byte");
+			}
+			bytesRead += result;
+		}
+
+		val byteBuffer = ByteBuffer.wrap(buffer);
+		byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
+
+		return byteBuffer.long.toULong();
+	}
+
+	private external fun unzip(path: String);
 }

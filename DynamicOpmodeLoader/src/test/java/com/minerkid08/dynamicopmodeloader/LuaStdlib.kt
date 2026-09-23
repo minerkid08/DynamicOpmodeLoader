@@ -1,29 +1,15 @@
 package com.minerkid08.dynamicopmodeloader
 
-class LuaStdlib
+object LuaStdlib
 {
+	@JvmStatic
 	fun print(string: String)
 	{
 		println(string);
 	}
 
-	fun luaErr(msg: String)
+	fun log(tag: String, value: String)
 	{
-		throw LuaError(msg);
-	}
-
-	fun cpErr(msg: String)
-	{
-		throw CompileError(msg);
-	}
-
-	fun fbErr(msg: String)
-	{
-		throw FunctionBuilderError(msg);
-	}
-
-	fun opmodeErr(msg: String)
-	{
-		throw UndefinedOpmodeError(msg);
+		println("%10s | %s".format(tag, value));
 	}
 }

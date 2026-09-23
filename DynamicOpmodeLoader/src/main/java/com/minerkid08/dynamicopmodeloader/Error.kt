@@ -1,51 +1,69 @@
 package com.minerkid08.dynamicopmodeloader
 
-import java.lang.RuntimeException
+import kotlin.RuntimeException
+
+class LuaRuntimeError(message: String) : RuntimeException()
+{
+	private var msg: String;
+	private var trace: Array<StackTraceElement> =
+		Array(0, { StackTraceElement("", "", "", 0) });
+
+	init
+	{
+		try
+		{
+			var ind = message.indexOf(':');
+			ind = message.indexOf(':', ind + 1) + 2;
+			msg = message.substring(ind, message.indexOf('\n'));
+
+			val lines = message.split('\n').drop(2);
+			trace = Array(lines.size, { i ->
+				val line = lines[i];
+				if (line[1] == '[')
+				{
+					val j = line.indexOf('\'');
+					val function = line.substring(j + 1, line.length - 1);
+					StackTraceElement("", '\b' + function, "native function", 0)
+				}
+				else
+				{
+					val k = line.indexOf(':');
+					val file = line.substring(1, k);
+					val j = line.indexOf('\'');
+					val function = if (j == -1) "main chunk";
+					else line.substring(j + 1, line.length - 1);
+					val num = line.substring(k + 1, line.indexOf(':', k + 1));
+
+					StackTraceElement("", '\b' + function, file, num.toInt())
+				}
+			});
+			stackTrace = trace;
+		}
+		catch (e: RuntimeException)
+		{
+			msg = message;
+		}
+	}
+
+	override fun getLocalizedMessage() = msg;
+}
+
+class LuaCompileError(private val msg: String) : RuntimeException()
+{
+	override fun getLocalizedMessage() = msg;
+}
+
+class FunctionBuilderError(private val msg: String) : RuntimeException()
+{
+	override fun getLocalizedMessage() = msg;
+}
+
+class UndefinedOpmodeError(private val msg: String) : RuntimeException()
+{
+	override fun getLocalizedMessage() = msg;
+}
 
 class LuaError(private val msg: String) : RuntimeException()
 {
-	override fun getLocalizedMessage(): String
-	{
-		var i = msg.indexOf(':');
-		i = msg.indexOf(':', i + 1) + 2;
-		return msg.substring(i, msg.indexOf('\n'));
-	}
-
-	override fun getStackTrace(): Array<StackTraceElement>
-	{
-		val lines = msg.split('\n').drop(2);
-		val trace = Array(lines.size, { i ->
-			val line = lines[i];
-			if (line[1] == '[')
-			{
-				val j = line.indexOf("'");
-				val function = line.substring(j + 1, line.length - 1);
-				StackTraceElement("", '\b' + function, "native function", 0)
-			}
-			else
-			{
-				val k = line.indexOf(':');
-				val file = line.substring(1, k);
-				val j = line.indexOf("'");
-				val function = if (j == -1) "main chunk";
-				else line.substring(j + 1, line.length - 1);
-				val num = line.substring(k + 1, line.indexOf(':', k + 1));
-
-				StackTraceElement("", '\b' + function, file, num.toInt())
-			}
-		});
-		return trace;
-	}
+	override fun getLocalizedMessage() = msg;
 }
-
-open class ErrBase(private val msg: String) : RuntimeException()
-{
-	override fun getLocalizedMessage(): String
-	{
-		return msg;
-	}
-}
-
-class CompileError(val msg: String) : ErrBase(msg);
-class FunctionBuilderError(val msg: String) : ErrBase(msg);
-class UndefinedOpmodeError(val msg: String) : ErrBase(msg);

@@ -1,21 +1,3 @@
---Colors = {
---	RED = 1,
---	BLUE = 2,
---	YELLOW = 3,
---	NONE = 4,
---	UNKNOWN = 5
---};
---
---require("blueMiddle");
---
---require("redBasket");
---require("blueBasket");
---
---require("redRight");
---require("blueLeft");
---
---require("testOpmode");
---require("visionTest");
 function a()
   b();
 end
@@ -25,7 +7,7 @@ function c()
 end
 
 function e()
-print(4);
+  print("heh");
 end
 
 function d()
@@ -36,9 +18,30 @@ function b()
   c();
 end
 
+local c3 = 0;
+
 addOpmode({
   name = ":)",
-  init = function()
-    a();
+  type = OpmodeType.Telop,
+  group = "help",
+  order = "a",
+    init = function()
+        require("telemetry");
+        actionPane:addLine("test");
+        robotPane:addLine("testttttttttttttttttttttttttttttttttt");
+        currentPane:addLine("test2");
+        aprilTagPane:addLine("test3");
+        TelemPaneManager:update();
+    error("done :)");
+  end,
+  update = function()
+    c3 = c3 + 1;
+    if (c3 > 1000) then
+      return true;
+    end
+    return false;
+  end,
+  stop = function()
+    print("opmode stop");
   end
 })
